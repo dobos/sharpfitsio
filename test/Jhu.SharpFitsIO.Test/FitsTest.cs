@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ICSharpCode.SharpZipLib.GZip;
 using Jhu.SharpFitsIO;
 
 namespace Jhu.SharpFitsIO
@@ -13,10 +14,20 @@ namespace Jhu.SharpFitsIO
     {
         private FitsFile OpenFits(string filename)
         {
-            var f = new FitsFile(
-                String.Format(@"..\..\..\test\data\{0}", filename),
-                FitsFileMode.Read,
-                Endianness.BigEndian);
+            var path = String.Format(@"..\..\..\test\data\{0}", filename);
+            FitsFile f;
+
+            if (filename.EndsWith(".gz"))
+            {
+                var infile = new FileStream(path, FileMode.Open, FileAccess.Read);
+                var gz = new GZipInputStream(infile);
+
+                f = new FitsFile(gz, FitsFileMode.Read, Endianness.BigEndian);
+            }
+            else
+            {
+                f = new FitsFile(path, FitsFileMode.Read, Endianness.BigEndian);
+            }
 
             return f;
         }

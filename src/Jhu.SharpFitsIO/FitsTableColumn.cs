@@ -175,34 +175,32 @@ namespace Jhu.SharpFitsIO
         {
             Card card;
 
+            // Create a new column
+            var column = new FitsTableColumn()
+            {
+                ID = index,
+            };
+
             // Get data type
             if (!hdu.Cards.TryGetValue(Constants.FitsKeywordTForm, index, out card))
             {
                 throw new FitsException("Keyword expected but not found:"); // TODO
             }
 
-            var tform = card.GetString();
-            var dt = FitsDataType.CreateFromTForm(tform);
-
-            // Create column
-
-            var column = new FitsTableColumn()
-            {
-                ID = index,
-            };
+            column.DataType = FitsDataType.CreateFromTForm(card.GetString());
 
             // Set optional parameters
 
             // --- Column name
             if (hdu.Cards.TryGetValue(Constants.FitsKeywordTType, index, out card))
             {
-                column.Name = card.GetString();
+                column.Name = card.GetString().Trim();
             }
 
             // Unit
             if (hdu.Cards.TryGetValue(Constants.FitsKeywordTUnit, index, out card))
             {
-                column.Unit = card.GetString();
+                column.Unit = card.GetString().Trim();
             }
 
             // Null value equivalent
@@ -226,7 +224,7 @@ namespace Jhu.SharpFitsIO
             // Format
             if (hdu.Cards.TryGetValue(Constants.FitsKeywordTDisp, index, out card))
             {
-                column.Format = card.GetString();
+                column.Format = card.GetString().Trim();
             }
 
             return column;

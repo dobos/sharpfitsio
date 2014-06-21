@@ -207,6 +207,7 @@ namespace Jhu.SharpFitsIO
             InitializeMembers(new StreamingContext());
 
             OpenExternalStream(stream, fileMode, endianness);
+            Open();
         }
 
         public FitsFile(Stream stream, FitsFileMode fileMode)
