@@ -9,7 +9,7 @@ namespace Jhu.SharpFitsIO
 {
     public class FitsDataType : ICloneable
     {
-        private static readonly Regex FormatRegex = new Regex(@"([0-9]*)([LXBIJAEDCMP]+)");
+        private static readonly Regex FormatRegex = new Regex(@"([0-9]*)([LXBIJKAEDCMP]+)");
 
         #region Private member variables
 
@@ -145,6 +145,9 @@ namespace Jhu.SharpFitsIO
                     break;
                 case 'J':
                     dt = FitsDataTypes.Int32;
+                    break;
+                case 'K':
+                    dt = FitsDataTypes.Int64;
                     break;
                 case 'A':
                     dt = FitsDataTypes.Char;

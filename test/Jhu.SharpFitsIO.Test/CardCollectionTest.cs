@@ -16,7 +16,6 @@ namespace Jhu.SharpFitsIO
             var cc = new CardCollection();
 
             cc.Add(new Card("TEST1", "Test1"));
-            cc.Add("TEST2", new Card("TEST2", "Test2"));
 
             // Test add with existing keyword
         }

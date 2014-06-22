@@ -8,7 +8,8 @@ using System.Globalization;
 
 namespace Jhu.SharpFitsIO
 {
-    public class Card
+    [Serializable]
+    public class Card : ICloneable
     {
         private static readonly Regex StringRegex = new Regex(@"'(?:[^']|'{2})*'");
 
@@ -28,14 +29,37 @@ namespace Jhu.SharpFitsIO
             set { comments = value; }
         }
 
+        public bool IsUnique
+        {
+            get
+            {
+                return !FitsFile.NonUniqueKeywords.Contains(keyword) &&
+                    keyword != String.Empty;
+            }
+        }
+
+        public bool IsContinue
+        {
+            get
+            {
+                return
+                    FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordContinue) == 0;
+            }
+        }
+
         public bool IsComment
         {
-            get { return StringComparer.InvariantCultureIgnoreCase.Compare(keyword, "COMMENT") == 0; }
+            get
+            {
+                return
+                    FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordComment) == 0 ||
+                    keyword == String.Empty;
+            }
         }
 
         public bool IsEnd
         {
-            get { return StringComparer.InvariantCultureIgnoreCase.Compare(keyword, "END") == 0; }
+            get { return FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordEnd) == 0; }
         }
 
         #region Constructors and initializers
@@ -72,8 +96,12 @@ namespace Jhu.SharpFitsIO
             this.comments = old.comments;
         }
 
-        #endregion
+        public object Clone()
+        {
+            return new Card(this);
+        }
 
+        #endregion
         #region Value accessors
 
         public String GetString()
@@ -141,6 +169,8 @@ namespace Jhu.SharpFitsIO
         /// </remarks>
         internal void Read(Stream stream)
         {
+            // TODO: handle continue
+
             var buffer = new byte[80];
             var res = stream.Read(buffer, 0, buffer.Length);
 
@@ -158,15 +188,20 @@ namespace Jhu.SharpFitsIO
             // bytes 0-7: keyword name
             this.keyword = line.Substring(0, 8).Trim();
 
-            // bytes 8-9: "= " sequence if there's value
             if (line[8] == '=' && line[9] == ' ')
             {
+                // bytes 8-9: "= " sequence if there's value
                 ReadValue(line.Substring(10));
             }
-            else
+            else if (FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordComment) == 0)
             {
                 rawValue = null;
                 comments = line.Substring(8);
+            }
+            else if (keyword == String.Empty)
+            {
+                rawValue = null;
+                comments = line.Substring(10);
             }
         }
 

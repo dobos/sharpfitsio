@@ -12,10 +12,38 @@ namespace Jhu.SharpFitsIO
     [DataContract(Namespace = "")]
     public class FitsFile : IDisposable, ICloneable
     {
+        #region String handlers
+
         public static readonly StringComparison Comparision = StringComparison.InvariantCultureIgnoreCase;
         public static readonly StringComparer Comparer = StringComparer.InvariantCultureIgnoreCase;
         public static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 
+        #endregion
+        #region Static members
+
+        /// <summary>
+        /// Hold a set of keywords that are not to be treated as unique
+        /// </summary>
+        [NonSerialized]
+        private static HashSet<string> nonUniqueKeywords;
+
+        /// <summary>
+        /// Gets a set of keywords that are not to be treated as unique.
+        /// </summary>
+        public static HashSet<string> NonUniqueKeywords
+        {
+            get { return nonUniqueKeywords; }
+        }
+
+        static FitsFile()
+        {
+            nonUniqueKeywords = new HashSet<string>(Comparer);
+            nonUniqueKeywords.Add(Constants.FitsKeywordComment);
+            nonUniqueKeywords.Add(Constants.FitsKeywordContinue);
+            nonUniqueKeywords.Add(Constants.FitsKeywordHierarch);
+        }
+
+        #endregion
         #region Private member variables
 
         /// <summary>
@@ -446,6 +474,14 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
+        /// <summary>
+        /// Reads the next HDU from the file.
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>
+        /// Skips reading the rest of the current HDU, so data will not
+        /// be read into memory.
+        /// </remarks>
         public HduBase ReadNextHdu()
         {
             if (hduCounter != -1)
@@ -533,6 +569,8 @@ namespace Jhu.SharpFitsIO
                 {
                     case Constants.FitsKeywordBinTable:
                         return new BinaryTableHdu(hdu);
+                    case Constants.FitsKeywordImage:
+                        return new ImageHdu(hdu);
                     default:
                         throw new NotImplementedException();
                 }

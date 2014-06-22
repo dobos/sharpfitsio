@@ -72,6 +72,19 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public static FitsDataType Int64
+        {
+            get
+            {
+                return new FitsDataType()
+                {
+                    Name = Constants.FitsTypeNameInt64,
+                    Type = typeof(Int64),
+                    ByteSize = sizeof(Int64),
+                };
+            }
+        }
+
         public static FitsDataType Char
         {
             get

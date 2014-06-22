@@ -43,6 +43,9 @@ namespace Jhu.SharpFitsIO
         [NonSerialized]
         private int strideCounter;
 
+        [NonSerialized]
+        private bool longStringsEnabled;
+
         #endregion
         #region Properties
 
@@ -81,6 +84,16 @@ namespace Jhu.SharpFitsIO
         public int TotalStrides
         {
             get { return totalStrides; }
+        }
+
+        /// <summary>
+        /// Gets or sets whether OGIP long text headers are enabled.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool LongStringsEnabled
+        {
+            get { return longStringsEnabled; }
+            set { longStringsEnabled = value; }
         }
 
         #endregion
@@ -138,7 +151,7 @@ namespace Jhu.SharpFitsIO
                 Card card;
                 if (cards.TryGetValue(Constants.FitsKeywordXtension, out card))
                 {
-                    return card.GetString();
+                    return card.GetString().Trim();
                 }
                 else
                 {
@@ -218,7 +231,7 @@ namespace Jhu.SharpFitsIO
             return new HduBase(this);
         }
 
-#endregion
+        #endregion
 
         public int GetAxisLength(int i)
         {
@@ -242,19 +255,9 @@ namespace Jhu.SharpFitsIO
                     card = new Card();
                     card.Read(Fits.ForwardStream);
 
-                    if (!cards.ContainsKey(card.Keyword))
-                    {
-                        // *** TODO: handle comments
-                        if (!card.IsComment)
-                        {
-                            cards.Add(card.Keyword.ToUpper(), card);
-                        }
-                    }
-                    else
-                    {
-                        // *** TODO: Duplicate keys, 
-                        throw new Exception();
-                    }
+                    ProcessHeader(card);
+
+                    cards.Add(card);
                 }
                 while (!card.IsEnd);
 
@@ -266,13 +269,28 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        protected virtual void ProcessHeader(Card card)
+        {
+            // Are long strings enabled?
+            if (FitsFile.Comparer.Compare(card.Keyword, Constants.FitsKeywordLongStrn) == 0)
+            {
+                this.longStringsEnabled = true;
+            }
+        }
+
         internal void ReadToFinish()
         {
-            var sl = GetStrideLength();
-            var sc = GetTotalStrides();
+            // Check if this is a header-only HDU. If not, we
+            // mush skip the data parts, otherwise skip the header padding only
 
-            long offset = sl * (sc - strideCounter);
-            Fits.ForwardStream.Seek(offset, SeekOrigin.Current);
+            if (AxisCount != 0)
+            {
+                var sl = GetStrideLength();
+                var sc = GetTotalStrides();
+
+                long offset = sl * (sc - strideCounter);
+                Fits.ForwardStream.Seek(offset, SeekOrigin.Current);
+            }
 
             Fits.SkipBlock();
         }

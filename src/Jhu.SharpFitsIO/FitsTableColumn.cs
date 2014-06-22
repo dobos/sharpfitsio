@@ -187,7 +187,7 @@ namespace Jhu.SharpFitsIO
                 throw new FitsException("Keyword expected but not found:"); // TODO
             }
 
-            column.DataType = FitsDataType.CreateFromTForm(card.GetString());
+            column.DataType = FitsDataType.CreateFromTForm(card.GetString().Trim());
 
             // Set optional parameters
 

@@ -5,12 +5,19 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    public class CardCollection : IDictionary<string, Card>, IList<Card>
+    /// <summary>
+    /// Implements a specialized collection to store FITS headers.
+    /// </summary>
+    /// <remarks>
+    /// The collection handles both unique and non-unique headers. Unique
+    /// headers are also stored in a dictionary for fast lookup by keyword.
+    /// </remarks>
+    public class CardCollection : IList<Card>
     {
         #region Private member variables
 
-        private List<Card> cardsList;
-        private Dictionary<string, Card> cardsDictionary;
+        private List<Card> cardList;
+        private Dictionary<string, Card> cardDictionary;
 
         #endregion
         #region Properties and indexers
@@ -19,7 +26,7 @@ namespace Jhu.SharpFitsIO
         {
             get
             {
-                return cardsDictionary[key];
+                return cardDictionary[key];
             }
             set
             {
@@ -31,7 +38,7 @@ namespace Jhu.SharpFitsIO
         {
             get
             {
-                return cardsList[index];
+                return cardList[index];
             }
             set
             {
@@ -39,19 +46,28 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        /// <summary>
+        /// Gets the collection of all headers.
+        /// </summary>
         public ICollection<Card> Values
         {
-            get { return cardsList; }
+            get { return cardList; }
         }
 
+        /// <summary>
+        /// Gets the collection of unique header keywords.
+        /// </summary>
         public ICollection<string> Keys
         {
-            get { return cardsDictionary.Keys; }
+            get { return cardDictionary.Keys; }
         }
 
+        /// <summary>
+        /// Gets number of all headers.
+        /// </summary>
         public int Count
         {
-            get { return cardsList.Count; }
+            get { return cardList.Count; }
         }
 
         public bool IsReadOnly
@@ -74,72 +90,74 @@ namespace Jhu.SharpFitsIO
 
         private void InitializeMembers()
         {
-            this.cardsList = new List<Card>();
-            this.cardsDictionary = new Dictionary<string, Card>(StringComparer.InvariantCultureIgnoreCase);
+            this.cardList = new List<Card>();
+            this.cardDictionary = new Dictionary<string, Card>(FitsFile.Comparer);
         }
 
         private void CopyMembers(CardCollection old)
         {
-            this.cardsList = new List<Card>(old.cardsList);
-            this.cardsDictionary = new Dictionary<string, Card>(old.cardsDictionary);
+            this.cardList = new List<Card>();
+            this.cardDictionary = new Dictionary<string, Card>(FitsFile.Comparer);
+
+            foreach (var card in old.cardList)
+            {
+                var ncard = (Card)card.Clone();
+
+                this.cardList.Add(ncard);
+                if (ncard.IsUnique)
+                {
+                    this.cardDictionary.Add(ncard.Keyword, ncard);
+                }
+            }
         }
 
         #endregion
         #region Collection interface functions
 
-        private void ValidateKeyword(string key, Card value)
+        public void Add(Card card)
         {
-            if (StringComparer.InvariantCultureIgnoreCase.Compare(key, value.Keyword) == 0)
+            if (card.IsUnique)
             {
-                return;
+                cardDictionary.Add(card.Keyword, card);
             }
-            else
+
+            cardList.Add(card);
+        }
+
+        public void Insert(int index, Card card)
+        {
+            if (card.IsUnique)
             {
-                throw new ArgumentException("Keyword and key don't match.");
+                cardDictionary.Add(card.Keyword, card);
             }
-        }
 
-        public void Add(Card value)
-        {
-            cardsDictionary.Add(value.Keyword, value);
-            cardsList.Add(value);
-        }
-
-        public void Add(string key, Card value)
-        {
-            ValidateKeyword(key, value);
-            Add(value);
-        }
-
-        public void Add(KeyValuePair<string, Card> item)
-        {
-            ValidateKeyword(item.Key, item.Value);
-
-            Add(item.Value);
-        }
-
-        public void Insert(int index, Card item)
-        {
-            cardsDictionary.Add(item.Keyword, item);
-            cardsList.Insert(index, item);
+            cardList.Insert(index, card);
         }
 
         public void RemoveAt(int index)
         {
-            cardsDictionary.Remove(cardsList[index].Keyword);
-            cardsList.RemoveAt(index);
+            if (cardList[index].IsUnique)
+            {
+                cardDictionary.Remove(cardList[index].Keyword);
+            }
+
+            cardList.RemoveAt(index);
         }
 
         public bool Remove(string key)
         {
-            cardsList.Remove(cardsDictionary[key]);
-            return cardsDictionary.Remove(key);
+            cardList.Remove(cardDictionary[key]);
+            return cardDictionary.Remove(key);
         }
 
-        public bool Remove(Card item)
+        public bool Remove(Card card)
         {
-            cardsDictionary.Remove(item.Keyword);
-            return cardsList.Remove(item);
+            if (card.IsUnique)
+            {
+                cardDictionary.Remove(card.Keyword);
+            }
+
+            return cardList.Remove(card);
         }
 
         public bool Remove(KeyValuePair<string, Card> item)
@@ -149,38 +167,33 @@ namespace Jhu.SharpFitsIO
 
         public void Clear()
         {
-            cardsList.Clear();
-            cardsDictionary.Clear();
+            cardList.Clear();
+            cardDictionary.Clear();
         }
 
         public bool ContainsKey(string key)
         {
-            return cardsDictionary.ContainsKey(key);
+            return cardDictionary.ContainsKey(key);
         }
 
         public bool Contains(Card item)
         {
-            return cardsList.Contains(item);
+            return cardList.Contains(item);
         }
 
         public bool Contains(KeyValuePair<string, Card> item)
         {
-            return cardsDictionary.Contains(item);
+            return cardDictionary.Contains(item);
         }
 
         public int IndexOf(Card item)
         {
-            return cardsList.IndexOf(item);
+            return cardList.IndexOf(item);
         }
 
         public void CopyTo(Card[] array, int arrayIndex)
         {
             throw new NotImplementedException();
-        }
-
-        void ICollection<KeyValuePair<string, Card>>.CopyTo(KeyValuePair<string, Card>[] array, int arrayIndex)
-        {
-            ((IDictionary<string, Card>)cardsDictionary).CopyTo(array, arrayIndex);
         }
 
         #endregion
@@ -194,7 +207,7 @@ namespace Jhu.SharpFitsIO
         /// <returns></returns>
         public bool TryGetValue(string key, out Card value)
         {
-            return cardsDictionary.TryGetValue(key, out value);
+            return cardDictionary.TryGetValue(key, out value);
         }
 
         /// <summary>
@@ -207,7 +220,7 @@ namespace Jhu.SharpFitsIO
         public bool TryGetValue(string key, int index, out Card card)
         {
             key += index.ToString();
-            return cardsDictionary.TryGetValue(key, out card);
+            return cardDictionary.TryGetValue(key, out card);
         }
 
         #endregion
@@ -215,17 +228,12 @@ namespace Jhu.SharpFitsIO
 
         IEnumerator<Card> IEnumerable<Card>.GetEnumerator()
         {
-            return cardsList.GetEnumerator();
-        }
-
-        IEnumerator<KeyValuePair<string, Card>> IEnumerable<KeyValuePair<string, Card>>.GetEnumerator()
-        {
-            return ((IDictionary<string, Card>)cardsDictionary).GetEnumerator();
+            return cardList.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return ((IDictionary<string, Card>)cardsDictionary).GetEnumerator();
+            return ((IDictionary<string, Card>)cardDictionary).GetEnumerator();
         }
 
         #endregion

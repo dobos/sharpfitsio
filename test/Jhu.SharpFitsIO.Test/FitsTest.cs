@@ -124,5 +124,18 @@ namespace Jhu.SharpFitsIO
             f.Close();
         }
 
+        [TestMethod]
+        public void ReadHerschelLevel2Test()
+        {
+            var f = OpenFits("herschel_level2.fits");
+
+            HduBase hdu;
+            while ((hdu = (HduBase)f.ReadNextHdu()) != null)
+            {
+            }
+
+            f.Close();
+        }
+
     }
 }
