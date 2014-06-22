@@ -97,7 +97,7 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        public object Clone()
+        public override object Clone()
         {
             return new BinaryTableHdu(this);
         }
