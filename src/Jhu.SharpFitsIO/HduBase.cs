@@ -246,14 +246,14 @@ namespace Jhu.SharpFitsIO
             if (!headerRead)
             {
                 // Save start position
-                headerPosition = Fits.ForwardStream.Position;
+                headerPosition = Fits.WrappedStream.Position;
 
                 Card card;
 
                 do
                 {
                     card = new Card();
-                    card.Read(Fits.ForwardStream);
+                    card.Read(Fits.WrappedStream);
 
                     ProcessHeader(card);
 
@@ -263,7 +263,7 @@ namespace Jhu.SharpFitsIO
 
                 // Skip block
                 Fits.SkipBlock();
-                dataPosition = Fits.ForwardStream.Position;
+                dataPosition = Fits.WrappedStream.Position;
 
                 headerRead = true;
             }
@@ -289,7 +289,7 @@ namespace Jhu.SharpFitsIO
                 var sc = GetTotalStrides();
 
                 long offset = sl * (sc - strideCounter);
-                Fits.ForwardStream.Seek(offset, SeekOrigin.Current);
+                Fits.WrappedStream.Seek(offset, SeekOrigin.Current);
             }
 
             Fits.SkipBlock();
@@ -348,7 +348,7 @@ namespace Jhu.SharpFitsIO
                 strideCounter = 0;
             }
 
-            if (strideBuffer.Length != Fits.ForwardStream.Read(strideBuffer, 0, strideBuffer.Length))
+            if (strideBuffer.Length != Fits.WrappedStream.Read(strideBuffer, 0, strideBuffer.Length))
             {
                 throw new FitsException("Unexpected end of stream.");  // *** TODO
             }

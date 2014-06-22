@@ -64,10 +64,10 @@ namespace Jhu.SharpFitsIO
         private bool ownsBaseStream;
 
         /// <summary>
-        /// A seek forward stream that is used to wrap sequential streams.
+        /// Wrapped version of the base stream (ForwardStream and/or DetachedStream)
         /// </summary>
         [NonSerialized]
-        private SeekForwardStream forwardStream;
+        private Stream wrappedStream;
 
         /// <summary>
         /// Read or write
@@ -128,9 +128,9 @@ namespace Jhu.SharpFitsIO
         /// Depending whether compression is turned on or not, we need to use
         /// the baseStream or the wrapper stream.
         /// </remarks>
-        internal SeekForwardStream ForwardStream
+        internal Stream WrappedStream
         {
-            get { return forwardStream; }
+            get { return wrappedStream; }
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Jhu.SharpFitsIO
         {
             this.baseStream = null;
             this.ownsBaseStream = false;
-            this.forwardStream = null;
+            this.wrappedStream = null;
 
             this.fileMode = FitsFileMode.Unknown;
             this.path = null;
@@ -265,7 +265,7 @@ namespace Jhu.SharpFitsIO
         {
             this.baseStream = null;
             this.ownsBaseStream = false;
-            this.forwardStream = null;
+            this.wrappedStream = null;
 
             this.fileMode = old.fileMode;
             this.path = old.path;
@@ -399,7 +399,7 @@ namespace Jhu.SharpFitsIO
             ownsBaseStream = true;
         }
 
-        protected void OpenForRead()
+        private void OpenForRead()
         {
             if (FileMode != FitsFileMode.Read)
             {
@@ -411,12 +411,11 @@ namespace Jhu.SharpFitsIO
                 OpenOwnStream();
             }
 
-            forwardStream = new SeekForwardStream(new DetachedStream(baseStream));
-
+            WrapStream();
             CreateBitConverter();
         }
 
-        protected void OpenForWrite()
+        private void OpenForWrite()
         {
             if (FileMode != FitsFileMode.Write)
             {
@@ -428,9 +427,20 @@ namespace Jhu.SharpFitsIO
                 OpenOwnStream();
             }
 
-            forwardStream = new SeekForwardStream(new DetachedStream(baseStream));
-
+            WrapStream();
             CreateBitConverter();
+        }
+
+        private void WrapStream()
+        {
+            if (!baseStream.CanSeek)
+            {
+                wrappedStream = new SeekForwardStream(new DetachedStream(baseStream));
+            }
+            else
+            {
+                wrappedStream = new DetachedStream(baseStream);
+            }
         }
 
         /// <summary>
@@ -438,12 +448,12 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         public void Close()
         {
-            if (forwardStream != null)
+            if (wrappedStream != null)
             {
-                forwardStream.Flush();
-                forwardStream.Close();
-                forwardStream.Dispose();
-                forwardStream = null;
+                wrappedStream.Flush();
+                wrappedStream.Close();
+                wrappedStream.Dispose();
+                wrappedStream = null;
             }
 
             if (ownsBaseStream && baseStream != null)
@@ -579,8 +589,8 @@ namespace Jhu.SharpFitsIO
 
         internal void SkipBlock()
         {
-            var offset = 2880 * ((forwardStream.Position + 2879) / 2880) - forwardStream.Position;
-            forwardStream.Seek(offset, SeekOrigin.Current);
+            var offset = 2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position;
+            wrappedStream.Seek(offset, SeekOrigin.Current);
         }
     }
 }
