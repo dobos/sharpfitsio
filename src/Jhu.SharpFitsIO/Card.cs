@@ -29,11 +29,11 @@ namespace Jhu.SharpFitsIO
             set { comments = value; }
         }
 
-        public bool IsUnique
+        public bool IsComment
         {
             get
             {
-                return !FitsFile.NonUniqueKeywords.Contains(keyword) &&
+                return !FitsFile.CommentKeywords.Contains(keyword) &&
                     keyword != String.Empty;
             }
         }
@@ -44,16 +44,6 @@ namespace Jhu.SharpFitsIO
             {
                 return
                     FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordContinue) == 0;
-            }
-        }
-
-        public bool IsComment
-        {
-            get
-            {
-                return
-                    FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordComment) == 0 ||
-                    keyword == String.Empty;
             }
         }
 
@@ -69,12 +59,25 @@ namespace Jhu.SharpFitsIO
             InitializeMembers();
         }
 
-        public Card(string keyword, string value)
+        public Card(string keyword)
         {
             InitializeMembers();
 
             this.keyword = keyword;
-            SetValue(value);
+        }
+
+        public Card(string keyword, int index)
+            : this(keyword + index.ToString(FitsFile.Culture))
+        {
+        }
+
+        public Card(string keyword, string rawValue, string comment)
+        {
+            InitializeMembers();
+
+            this.keyword = keyword;
+            this.rawValue = rawValue;
+            this.comments = comment;
         }
 
         public Card(Card old)
@@ -155,6 +158,7 @@ namespace Jhu.SharpFitsIO
         // *** TODO: implement other types of getters and setters
 
         #endregion
+        #region Read functions
 
         /// <summary>
         /// Reads a single card image from the stream at the current position
@@ -193,12 +197,10 @@ namespace Jhu.SharpFitsIO
                 // bytes 8-9: "= " sequence if there's value
                 ReadValue(line.Substring(10));
             }
-            else if (FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordComment) == 0)
-            {
-                rawValue = null;
-                comments = line.Substring(8);
-            }
-            else if (keyword == String.Empty)
+            else if (FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordComment) == 0 ||
+                FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordHierarch) == 0 ||
+                FitsFile.Comparer.Compare(keyword, Constants.FitsKeywordContinue) == 0 ||
+                keyword == String.Empty)
             {
                 rawValue = null;
                 comments = line.Substring(10);
@@ -239,6 +241,36 @@ namespace Jhu.SharpFitsIO
                 comments = null;
             }
         }
+
+        #endregion
+        #region Write functions
+
+        public void Write(Stream stream)
+        {
+            // TODO: implement multi-line values using the CONTINUE keyword
+
+            // Header keyword padded to eight characters
+            string line = keyword.PadRight(8);
+
+            // header keyword
+            if (!IsComment && !IsContinue && !IsEnd)
+            {
+                line += "= ";
+            }
+            else
+            {
+                line += "  ";
+            }
+
+            line += rawValue;
+
+            var buffer = new byte[80];
+            Encoding.ASCII.GetBytes(line, 0, Math.Min(line.Length, 80), buffer, 0);
+
+            stream.Write(buffer, 0, buffer.Length);
+        }
+
+        #endregion
 
         public override string ToString()
         {

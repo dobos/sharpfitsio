@@ -10,17 +10,12 @@ namespace Jhu.SharpFitsIO
         public const string FitsKeywordSimple = "SIMPLE";
         public const string FitsKeywordExtend = "EXTEND";
         public const string FitsKeywordXtension = "XTENSION";
-        public const string FitsKeywordBinTable = "BINTABLE";
-        public const string FitsKeywordImage = "IMAGE";
-
         public const string FitsKeywordBitPix = "BITPIX";
         public const string FitsKeywordNAxis = "NAXIS";
-
         public const string FitsKeywordTFields = "TFIELDS";
         public const string FitsKeywordGCount = "GCOUNT";
         public const string FitsKeywordPCount = "PCOUNT";
         public const string FitsKeywordTHeap = "THEAP";
-
         public const string FitsKeywordTForm = "TFORM";
         public const string FitsKeywordTType = "TTYPE";
         public const string FitsKeywordTUnit = "TUNIT";
@@ -28,14 +23,14 @@ namespace Jhu.SharpFitsIO
         public const string FitsKeywordTScal = "TSCAL";
         public const string FitsKeywordTZero = "TZERO";
         public const string FitsKeywordTDisp = "TDISP";
-
         public const string FitsKeywordLongStrn = "LONGSTRN";
-
         public const string FitsKeywordComment = "COMMENT";
         public const string FitsKeywordContinue = "CONTINUE";
         public const string FitsKeywordHierarch = "HIERARCH";
-
         public const string FitsKeywordEnd = "END";
+
+        public const string FitsExtensionBinTable = "BINTABLE";
+        public const string FitsExtensionImage = "IMAGE";
 
         public const string FitsTypeNameLogical = "Logical";
         public const string FitsTypeNameBit = "Bit";

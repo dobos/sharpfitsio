@@ -26,6 +26,12 @@ namespace Jhu.SharpFitsIO
         private Type type;
 
         /// <summary>
+        /// One character code of data type
+        /// </summary>
+        [NonSerialized]
+        private char code;
+
+        /// <summary>
         /// Repeat value
         /// </summary>
         [NonSerialized]
@@ -36,6 +42,11 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         [NonSerialized]
         private int byteSize;
+
+        private Int32? nullValue;
+        private double? scale;
+        private double? zero;
+        private string dimensions;
 
         #endregion
         #region Properties
@@ -58,6 +69,12 @@ namespace Jhu.SharpFitsIO
         {
             get { return type; }
             internal set { type = value; }
+        }
+
+        public Char Code
+        {
+            get { return code; }
+            internal set { code = value; }
         }
 
         /// <summary>
@@ -86,6 +103,51 @@ namespace Jhu.SharpFitsIO
             get { return byteSize * repeat; }
         }
 
+        /// <summary>
+        /// Gets or sets the value indicating null.
+        /// </summary>
+        /// <remarks>
+        /// Corresponds to the TNULLn keyword
+        /// </remarks>
+        public Int32? NullValue
+        {
+            get { return nullValue; }
+            set { nullValue = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the scale of the column.
+        /// </summary>
+        /// <remarks>
+        /// Corresponds to the TSCALn keyword
+        /// </remarks>
+        public double? Scale
+        {
+            get { return scale; }
+            set { scale = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the zero offset of the column.
+        /// </summary>
+        /// <remarks>
+        /// Corresponds to the TZEROn keyword
+        /// </remarks>
+        public double? Zero
+        {
+            get { return zero; }
+            set { zero = value; }
+        }
+
+        /// <summary>
+        /// Currently not implemented
+        /// </summary>
+        public string Dimensions
+        {
+            get { return dimensions; }
+            set { dimensions = value; }
+        }
+
         #endregion
         #region Constructors and initializers
 
@@ -105,6 +167,10 @@ namespace Jhu.SharpFitsIO
             this.type = null;
             this.repeat = 1;
             this.byteSize = 0;
+            this.nullValue = null;
+            this.scale = null;
+            this.zero = null;
+            this.dimensions = null;
         }
 
         private void CopyMembers(FitsDataType old)
@@ -113,6 +179,10 @@ namespace Jhu.SharpFitsIO
             this.type = old.type;
             this.repeat = old.repeat;
             this.byteSize = old.byteSize;
+            this.nullValue = old.nullValue;
+            this.scale = old.scale;
+            this.zero = old.zero;
+            this.dimensions = old.dimensions;
         }
 
         public object Clone()
@@ -197,5 +267,9 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public string GetTFormString()
+        {
+            return repeat.ToString(FitsFile.Culture) + code;
+        }
     }
 }

@@ -30,8 +30,19 @@ namespace Jhu.SharpFitsIO
             }
             set
             {
-                throw new NotImplementedException();
+                if (FitsFile.Comparer.Compare(key, value.Keyword) != 0)
+                {
+                    throw new InvalidOperationException();  // TODO
+                }
+
+                Set(value);
             }
+        }
+
+        public Card this[string key, int index]
+        {
+            get { return this[key + index.ToString(FitsFile.Culture)]; }
+            set { this[key + index.ToString(FitsFile.Culture)] = value; }
         }
 
         public Card this[int index]
@@ -42,7 +53,19 @@ namespace Jhu.SharpFitsIO
             }
             set
             {
-                throw new NotImplementedException();
+                var keyword = cardList[index].Keyword;
+
+                if (!value.IsComment && cardDictionary.ContainsKey(keyword))
+                {
+                    cardDictionary.Remove(keyword);
+                }
+
+                cardList[index] = value;
+
+                if (!value.IsComment)
+                {
+                    cardDictionary.Add(keyword, value);
+                }
             }
         }
 
@@ -104,7 +127,7 @@ namespace Jhu.SharpFitsIO
                 var ncard = (Card)card.Clone();
 
                 this.cardList.Add(ncard);
-                if (ncard.IsUnique)
+                if (ncard.IsComment)
                 {
                     this.cardDictionary.Add(ncard.Keyword, ncard);
                 }
@@ -116,7 +139,7 @@ namespace Jhu.SharpFitsIO
 
         public void Add(Card card)
         {
-            if (card.IsUnique)
+            if (card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);
             }
@@ -126,7 +149,7 @@ namespace Jhu.SharpFitsIO
 
         public void Insert(int index, Card card)
         {
-            if (card.IsUnique)
+            if (card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);
             }
@@ -136,7 +159,7 @@ namespace Jhu.SharpFitsIO
 
         public void RemoveAt(int index)
         {
-            if (cardList[index].IsUnique)
+            if (cardList[index].IsComment)
             {
                 cardDictionary.Remove(cardList[index].Keyword);
             }
@@ -152,7 +175,7 @@ namespace Jhu.SharpFitsIO
 
         public bool Remove(Card card)
         {
-            if (card.IsUnique)
+            if (card.IsComment)
             {
                 cardDictionary.Remove(card.Keyword);
             }
@@ -197,7 +220,7 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
-        #region Value get functions
+        #region Get and set functions
 
         /// <summary>
         /// Returns the value a header, if it exists.
@@ -205,7 +228,7 @@ namespace Jhu.SharpFitsIO
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public bool TryGetValue(string key, out Card value)
+        public bool TryGet(string key, out Card value)
         {
             return cardDictionary.TryGetValue(key, out value);
         }
@@ -217,10 +240,31 @@ namespace Jhu.SharpFitsIO
         /// <param name="index"></param>
         /// <param name="card"></param>
         /// <returns></returns>
-        public bool TryGetValue(string key, int index, out Card card)
+        public bool TryGet(string key, int index, out Card card)
         {
             key += index.ToString();
             return cardDictionary.TryGetValue(key, out card);
+        }
+
+        public void Set(Card card)
+        {
+            if (card.IsComment)
+            {
+                throw new InvalidOperationException();  // TODO
+            }
+
+            if (cardDictionary.ContainsKey(card.Keyword))
+            {
+                var index = cardList.IndexOf(cardDictionary[card.Keyword]);
+
+                cardDictionary[card.Keyword] = card;
+                cardList[index] = card;
+            }
+            else
+            {
+                cardDictionary.Add(card.Keyword, card);
+                cardList.Add(card);
+            }
         }
 
         #endregion

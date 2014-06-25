@@ -14,12 +14,8 @@ namespace Jhu.SharpFitsIO
         private int id;
         private string name;
         private FitsDataType dataType;
-        private Int32? nullValue;
         private string unit;
-        private double? scale;
-        private double? zero;
         private string format;
-        private string dimensions;
 
         #region Properties
 
@@ -57,18 +53,6 @@ namespace Jhu.SharpFitsIO
         }
 
         /// <summary>
-        /// Gets or sets the value indicating null.
-        /// </summary>
-        /// <remarks>
-        /// Corresponds to the TNULLn keyword
-        /// </remarks>
-        public Int32? NullValue
-        {
-            get { return nullValue; }
-            set { nullValue = value; }
-        }
-
-        /// <summary>
         /// Gets or sets the unit of the column.
         /// </summary>
         /// <remarks>
@@ -81,30 +65,6 @@ namespace Jhu.SharpFitsIO
         }
 
         /// <summary>
-        /// Gets or sets the scale of the column.
-        /// </summary>
-        /// <remarks>
-        /// Corresponds to the TSCALn keyword
-        /// </remarks>
-        public double? Scale
-        {
-            get { return scale; }
-            set { scale = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the zero offset of the column.
-        /// </summary>
-        /// <remarks>
-        /// Corresponds to the TZEROn keyword
-        /// </remarks>
-        public double? Zero
-        {
-            get { return zero; }
-            set { zero = value; }
-        }
-
-        /// <summary>
         /// Gets or sets the display format of the column.
         /// </summary>
         /// <remarks>
@@ -114,15 +74,6 @@ namespace Jhu.SharpFitsIO
         {
             get { return format; }
             set { format = value; }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string Dimensions
-        {
-            get { return dimensions; }
-            set { dimensions = value; }
         }
 
         #endregion
@@ -143,12 +94,8 @@ namespace Jhu.SharpFitsIO
             this.id = 0;
             this.name = null;
             this.dataType = null;
-            this.nullValue = null;
             this.unit = null;
-            this.scale = null;
-            this.zero = null;
             this.format = null;
-            this.dimensions = null;
         }
 
         private void CopyMembers(FitsTableColumn old)
@@ -156,12 +103,8 @@ namespace Jhu.SharpFitsIO
             this.id = old.id;
             this.name = old.name;
             this.dataType = new FitsDataType(old.dataType);
-            this.nullValue = old.nullValue;
             this.unit = old.unit;
-            this.scale = old.scale;
-            this.zero = old.zero;
             this.format = old.format;
-            this.dimensions = old.dimensions;
         }
 
         public object Clone()
@@ -171,7 +114,7 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
-        internal static FitsTableColumn CreateFromHeader(HduBase hdu, int index)
+        internal static FitsTableColumn CreateFromCards(BinaryTableHdu hdu, int index)
         {
             Card card;
 
@@ -182,7 +125,7 @@ namespace Jhu.SharpFitsIO
             };
 
             // Get data type
-            if (!hdu.Cards.TryGetValue(Constants.FitsKeywordTForm, index, out card))
+            if (!hdu.Cards.TryGet(Constants.FitsKeywordTForm, index, out card))
             {
                 throw new FitsException("Keyword expected but not found:"); // TODO
             }
@@ -192,42 +135,103 @@ namespace Jhu.SharpFitsIO
             // Set optional parameters
 
             // --- Column name
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTType, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTType, index, out card))
             {
                 column.Name = card.GetString().Trim();
             }
 
             // Unit
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTUnit, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTUnit, index, out card))
             {
                 column.Unit = card.GetString().Trim();
             }
 
             // Null value equivalent
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTNull, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTNull, index, out card))
             {
-                column.NullValue = card.GetInt32();
+                column.DataType.NullValue = card.GetInt32();
             }
 
             // Scale
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTScal, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTScal, index, out card))
             {
-                column.Scale = card.GetDouble();
+                column.DataType.Scale = card.GetDouble();
             }
 
             // Zero offset
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTZero, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTZero, index, out card))
             {
-                column.Zero = card.GetDouble();
+                column.DataType.Zero = card.GetDouble();
             }
 
             // Format
-            if (hdu.Cards.TryGetValue(Constants.FitsKeywordTDisp, index, out card))
+            if (hdu.Cards.TryGet(Constants.FitsKeywordTDisp, index, out card))
             {
                 column.Format = card.GetString().Trim();
             }
 
+            // Dimensions
+            // TODO: implement TDIMn
+
             return column;
+        }
+
+        internal void SetCards(BinaryTableHdu hdu)
+        {
+            Card card;
+
+            // TFORMn
+            card = new Card(Constants.FitsKeywordTForm, this.id);
+            card.SetValue(dataType.GetTFormString());
+            hdu.Cards.Set(card);
+
+            // TTYPEn
+            if (name != null)
+            {
+                card = new Card(Constants.FitsKeywordTType, this.id);
+                card.SetValue(name);
+                hdu.Cards.Set(card);
+            }
+
+            // TUNITn
+            if (unit != null)
+            {
+                card = new Card(Constants.FitsKeywordTUnit, this.id);
+                card.SetValue(unit);
+                hdu.Cards.Set(card);
+            }
+
+            // TNULLn
+            if (dataType.NullValue.HasValue)
+            {
+                card = new Card(Constants.FitsKeywordTNull, this.id);
+                card.SetValue(dataType.NullValue.Value);
+                hdu.Cards.Set(card);
+            }
+
+            // TSCALn
+            if (dataType.Scale.HasValue)
+            {
+                card = new Card(Constants.FitsKeywordTScal, this.id);
+                card.SetValue(dataType.Scale.Value);
+                hdu.Cards.Set(card);
+            }
+
+            // TZEROn
+            if (dataType.Zero.HasValue)
+            {
+                card = new Card(Constants.FitsKeywordTZero, this.id);
+                card.SetValue(dataType.Zero.Value);
+                hdu.Cards.Set(card);
+            }
+
+            // TDISPn
+            if (format != null)
+            {
+                card = new Card(Constants.FitsKeywordTDisp, this.id);
+                card.SetValue(format);
+                hdu.Cards.Set(card);
+            }
         }
     }
 }

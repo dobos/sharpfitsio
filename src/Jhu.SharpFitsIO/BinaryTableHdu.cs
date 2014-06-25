@@ -72,7 +72,7 @@ namespace Jhu.SharpFitsIO
         {
             InitializeMembers();
 
-            DetectColumns();
+            ProcessColumnCards();
         }
 
         private BinaryTableHdu(BinaryTableHdu old)
@@ -103,37 +103,35 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
+        #region Static create functions
+
+        public static BinaryTableHdu Create(FitsFile fits, bool initialize)
+        {
+            var hdu = new BinaryTableHdu(fits);
+
+            if (initialize)
+            {
+                hdu.InitializeCards(false, false);
+            }
+
+            return hdu;
+        }
+
+        #endregion
+        #region Card functions
+
+        protected override void InitializeCards(bool primary, bool hasExtension)
+        {
+            base.InitializeCards(primary, hasExtension);
+
+            Extension = Constants.FitsExtensionBinTable;
+            AxisCount = 2;
+            SetAxisLength(1, 0);
+            SetAxisLength(2, 0);
+        }
+
+        #endregion
         #region Column functions
-
-        private void DetectColumns()
-        {
-            columns.Clear();
-
-            // Loop though header cards and 
-            for (int i = 0; i < ColumnCount; i++)
-            {
-                // FITS column indexes are 1-based!
-                columns.Add(FitsTableColumn.CreateFromHeader(this, i + 1));
-            }
-
-            InitializeColumnByteReaders();
-
-            // Verify size
-            if (GetAxisLength(0) != GetStrideLength())
-            {
-                throw new Exception();  // *** TODO
-            }
-        }
-
-        private void InitializeColumnByteReaders()
-        {
-            columnByteReaders = new ByteReaderDelegate[Columns.Count];
-
-            for (int i = 0; i < columnByteReaders.Length; i++)
-            {
-                columnByteReaders[i] = GetByteReaderDelegate(Columns[i]);
-            }
-        }
 
         public override int GetStrideLength()
         {
@@ -145,6 +143,53 @@ namespace Jhu.SharpFitsIO
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Detects columns from header cards.
+        /// </summary>
+        private void ProcessColumnCards()
+        {
+            columns.Clear();
+
+            // Loop though header cards and 
+            for (int i = 0; i < ColumnCount; i++)
+            {
+                // FITS column indexes are 1-based!
+                columns.Add(FitsTableColumn.CreateFromCards(this, i + 1));
+            }
+
+            InitializeColumnByteReaders();
+
+            // Verify size
+            if (GetAxisLength(1) != GetStrideLength())
+            {
+                throw new Exception();  // *** TODO
+            }
+        }
+
+        /// <summary>
+        /// Creates header cards for columns
+        /// </summary>
+        private void SetColumnCards()
+        {
+
+            // TODO: where to call this from? expose as public and call from wrraper?
+
+            for (int i = 0; i < columns.Count; i++)
+            {
+                columns[i].SetCards(this);
+            }
+        }
+
+        private void InitializeColumnByteReaders()
+        {
+            columnByteReaders = new ByteReaderDelegate[Columns.Count];
+
+            for (int i = 0; i < columnByteReaders.Length; i++)
+            {
+                columnByteReaders[i] = GetByteReaderDelegate(Columns[i]);
+            }
         }
 
         #endregion

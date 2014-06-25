@@ -25,22 +25,22 @@ namespace Jhu.SharpFitsIO
         /// Hold a set of keywords that are not to be treated as unique
         /// </summary>
         [NonSerialized]
-        private static HashSet<string> nonUniqueKeywords;
+        private static HashSet<string> commentKeywords;
 
         /// <summary>
         /// Gets a set of keywords that are not to be treated as unique.
         /// </summary>
-        public static HashSet<string> NonUniqueKeywords
+        public static HashSet<string> CommentKeywords
         {
-            get { return nonUniqueKeywords; }
+            get { return commentKeywords; }
         }
 
         static FitsFile()
         {
-            nonUniqueKeywords = new HashSet<string>(Comparer);
-            nonUniqueKeywords.Add(Constants.FitsKeywordComment);
-            nonUniqueKeywords.Add(Constants.FitsKeywordContinue);
-            nonUniqueKeywords.Add(Constants.FitsKeywordHierarch);
+            commentKeywords = new HashSet<string>(Comparer);
+            commentKeywords.Add(Constants.FitsKeywordComment);
+            commentKeywords.Add(Constants.FitsKeywordContinue);
+            commentKeywords.Add(Constants.FitsKeywordHierarch);
         }
 
         #endregion
@@ -569,7 +569,7 @@ namespace Jhu.SharpFitsIO
             {
                 return hdu;
             }
-            else if (hdu.IsSimple)
+            else if (hdu.Simple)
             {
                 return new ImageHdu(hdu);
             }
@@ -577,9 +577,9 @@ namespace Jhu.SharpFitsIO
             {
                 switch (hdu.Extension)
                 {
-                    case Constants.FitsKeywordBinTable:
+                    case Constants.FitsExtensionBinTable:
                         return new BinaryTableHdu(hdu);
-                    case Constants.FitsKeywordImage:
+                    case Constants.FitsExtensionImage:
                         return new ImageHdu(hdu);
                     default:
                         throw new NotImplementedException();
@@ -587,7 +587,10 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        internal void SkipBlock()
+        /// <summary>
+        /// Advances the stream to the next 2880 byte block
+        /// </summary>
+        public void SkipBlock()
         {
             var offset = 2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position;
             wrappedStream.Seek(offset, SeekOrigin.Current);

@@ -48,8 +48,8 @@ namespace Jhu.SharpFitsIO
             var img = (ImageHdu)f.ReadNextHdu();
 
             Assert.AreEqual(2, img.AxisCount);
-            Assert.AreEqual(2048, img.GetAxisLength(0));
-            Assert.AreEqual(1489, img.GetAxisLength(1));
+            Assert.AreEqual(2048, img.GetAxisLength(1));
+            Assert.AreEqual(1489, img.GetAxisLength(2));
 
             while (img.HasMoreStrides)
             {
@@ -76,8 +76,8 @@ namespace Jhu.SharpFitsIO
             var img = (ImageHdu)f.ReadNextHdu();
 
             Assert.AreEqual(2, img.AxisCount);
-            Assert.AreEqual(3857, img.GetAxisLength(0));
-            Assert.AreEqual(5, img.GetAxisLength(1));
+            Assert.AreEqual(3857, img.GetAxisLength(1));
+            Assert.AreEqual(5, img.GetAxisLength(2));
 
             while (img.HasMoreStrides)
             {

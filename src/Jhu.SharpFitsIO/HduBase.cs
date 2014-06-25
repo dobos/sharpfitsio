@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 
 namespace Jhu.SharpFitsIO
 {
+    // TODO: rename to SimpleHDU or simply HDU
     public class HduBase : ICloneable
     {
         #region Private member variables
@@ -22,8 +23,13 @@ namespace Jhu.SharpFitsIO
         [NonSerialized]
         protected FitsFile file;
 
+        private bool primary;
+
         [NonSerialized]
         private bool headerRead;
+
+        [NonSerialized]
+        private bool headerWritten;
 
         [NonSerialized]
         private long headerPosition;
@@ -54,6 +60,13 @@ namespace Jhu.SharpFitsIO
         {
             get { return file; }
             set { file = value; }
+        }
+
+        [DataMember]
+        public bool IsPrimary
+        {
+            get { return primary; }
+            set { primary = value; }
         }
 
         [IgnoreDataMember]
@@ -97,15 +110,15 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
-        #region Keyword accessor properties
+        #region Keyword accessor properties and functions
 
         [IgnoreDataMember]
-        public bool IsSimple
+        public bool Simple
         {
             get
             {
                 Card card;
-                if (cards.TryGetValue(Constants.FitsKeywordSimple, out card))
+                if (Cards.TryGet(Constants.FitsKeywordSimple, out card))
                 {
                     return card.GetBoolean();
                 }
@@ -113,6 +126,98 @@ namespace Jhu.SharpFitsIO
                 {
                     return false;
                 }
+            }
+            set
+            {
+                Card card;
+                if (!cards.TryGet(Constants.FitsKeywordSimple, out card))
+                {
+                    card = new Card(Constants.FitsKeywordSimple);
+                    cards.Add(card);
+                }
+
+                card.SetValue(value);
+            }
+        }
+
+        [IgnoreDataMember]
+        public string Extension
+        {
+            get
+            {
+                Card card;
+                if (cards.TryGet(Constants.FitsKeywordXtension, out card))
+                {
+                    return card.GetString().Trim();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            set
+            {
+                Card card;
+                if (!cards.TryGet(Constants.FitsKeywordXtension, out card))
+                {
+                    card = new Card(Constants.FitsKeywordXtension);
+                    cards.Add(card);
+                }
+
+                card.SetValue(value);
+            }
+        }
+
+        [IgnoreDataMember]
+        public int AxisCount
+        {
+            get
+            {
+                return cards[Constants.FitsKeywordNAxis].GetInt32();
+            }
+            set
+            {
+                cards[Constants.FitsKeywordNAxis].SetValue(value);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        /// <remarks>Attention! FITS image axes use 1-based indexing.</remarks>
+        public int GetAxisLength(int i)
+        {
+            return cards[Constants.FitsKeywordNAxis + i.ToString(FitsFile.Culture)].GetInt32();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="value"></param>
+        /// <remarks>Attention! FITS image axes use 1-based indexing.</remarks>
+        public void SetAxisLength(int i, int value)
+        {
+            var keyword = Constants.FitsKeywordNAxis + i.ToString(FitsFile.Culture);
+
+            Card card;
+            if (!cards.TryGet(keyword, out card))
+            {
+                card = new Card(keyword);
+                cards.Add(card);            // TODO: observer header order!
+            }
+
+            card.SetValue(value);
+        }
+
+        [IgnoreDataMember]
+        public int BitsPerPixel
+        {
+            get
+            {
+                return cards[Constants.FitsKeywordBitPix].GetInt32();
             }
         }
 
@@ -128,7 +233,7 @@ namespace Jhu.SharpFitsIO
             get
             {
                 Card card;
-                if (cards.TryGetValue(Constants.FitsKeywordExtend, out card))
+                if (Cards.TryGet(Constants.FitsKeywordExtend, out card))
                 {
                     return card.GetBoolean();
                 }
@@ -140,41 +245,6 @@ namespace Jhu.SharpFitsIO
                 {
                     return false;
                 }
-            }
-        }
-
-        [IgnoreDataMember]
-        public string Extension
-        {
-            get
-            {
-                Card card;
-                if (cards.TryGetValue(Constants.FitsKeywordXtension, out card))
-                {
-                    return card.GetString().Trim();
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
-        [IgnoreDataMember]
-        public int BitsPerPixel
-        {
-            get
-            {
-                return cards[Constants.FitsKeywordBitPix].GetInt32();
-            }
-        }
-
-        [IgnoreDataMember]
-        public int AxisCount
-        {
-            get
-            {
-                return cards[Constants.FitsKeywordNAxis].GetInt32();
             }
         }
 
@@ -199,11 +269,11 @@ namespace Jhu.SharpFitsIO
             this.file = null;
 
             this.headerRead = false;
+            this.headerWritten = false;
             this.headerPosition = -1;
             this.dataPosition = -1;
 
             this.cards = new CardCollection();
-            //this.columns = 
 
             this.strideBuffer = null;
             this.totalStrides = 0;
@@ -215,11 +285,11 @@ namespace Jhu.SharpFitsIO
             this.file = old.file;
 
             this.headerRead = old.headerRead;
+            this.headerWritten = old.headerWritten;
             this.headerPosition = old.headerPosition;
             this.dataPosition = old.dataPosition;
 
             this.cards = new CardCollection(old.cards);
-            //this.columns = 
 
             this.strideBuffer = null;
             this.totalStrides = 0;
@@ -232,67 +302,53 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
+        #region Static create functions
 
-        public int GetAxisLength(int i)
+        public static HduBase Create(FitsFile fits, bool initialize, bool primary, bool hasExtensions)
         {
-            return cards[Constants.FitsKeywordNAxis + (i + 1).ToString(CultureInfo.InvariantCulture)].GetInt32();
+            var hdu = new HduBase(fits);
+
+            if (initialize)
+            {
+                hdu.InitializeCards(primary, hasExtensions);
+            }
+
+            return hdu;
         }
 
-        #region Read functions
+        #endregion
+        #region Card functions
 
-        public void ReadHeader()
+        protected virtual void InitializeCards(bool primary, bool hasExtension)
         {
-            // Make sure header is read only once
-            if (!headerRead)
+            // Mandatory keywords for primary and extension HDUs
+            if (primary)
             {
-                // Save start position
-                headerPosition = Fits.WrappedStream.Position;
+                cards.Add(new Card(Constants.FitsKeywordSimple, "T", "conforms to FITS standard"));
+            }
+            else
+            {
+                cards.Add(new Card(Constants.FitsKeywordXtension, String.Empty, "extension type"));
+            }
 
-                Card card;
+            // Mandatory for all HDUs
+            cards.Add(new Card(Constants.FitsKeywordNAxis, "0", "number of array dimensions"));
+            cards.Add(new Card(Constants.FitsKeywordBitPix, "8", "array data type"));
 
-                do
-                {
-                    card = new Card();
-                    card.Read(Fits.WrappedStream);
-
-                    ProcessHeader(card);
-
-                    cards.Add(card);
-                }
-                while (!card.IsEnd);
-
-                // Skip block
-                Fits.SkipBlock();
-                dataPosition = Fits.WrappedStream.Position;
-
-                headerRead = true;
+            // Primary HDUs may have this keyword if there are additional HDUs
+            if (hasExtension)
+            {
+                cards.Add(new Card(Constants.FitsKeywordExtend, "F", "has extensions"));
             }
         }
 
-        protected virtual void ProcessHeader(Card card)
+        protected virtual void ProcessCard(Card card)
         {
             // Are long strings enabled?
             if (FitsFile.Comparer.Compare(card.Keyword, Constants.FitsKeywordLongStrn) == 0)
             {
                 this.longStringsEnabled = true;
             }
-        }
-
-        internal void ReadToFinish()
-        {
-            // Check if this is a header-only HDU. If not, we
-            // mush skip the data parts, otherwise skip the header padding only
-
-            if (AxisCount != 0)
-            {
-                var sl = GetStrideLength();
-                var sc = GetTotalStrides();
-
-                long offset = sl * (sc - strideCounter);
-                Fits.WrappedStream.Seek(offset, SeekOrigin.Current);
-            }
-
-            Fits.SkipBlock();
         }
 
         #endregion
@@ -307,7 +363,7 @@ namespace Jhu.SharpFitsIO
         /// </remarks>
         public virtual int GetStrideLength()
         {
-            return Math.Abs(BitsPerPixel) / 8 * GetAxisLength(0);
+            return Math.Abs(BitsPerPixel) / 8 * GetAxisLength(1);
         }
 
         /// <summary>
@@ -361,6 +417,79 @@ namespace Jhu.SharpFitsIO
             }
 
             return strideBuffer;
+        }
+
+        #endregion
+        #region Read functions
+
+        public void ReadHeader()
+        {
+            // Make sure header is read only once
+            if (!headerRead)
+            {
+                // Save start position
+                headerPosition = Fits.WrappedStream.Position;
+
+                Card card;
+
+                do
+                {
+                    card = new Card();
+                    card.Read(Fits.WrappedStream);
+
+                    ProcessCard(card);
+
+                    cards.Add(card);
+                }
+                while (!card.IsEnd);
+
+                // Skip block
+                Fits.SkipBlock();
+                dataPosition = Fits.WrappedStream.Position;
+
+                headerRead = true;
+            }
+        }
+
+        internal void ReadToFinish()
+        {
+            // Check if this is a header-only HDU. If not, we
+            // mush skip the data parts, otherwise skip the header padding only
+
+            if (AxisCount != 0)
+            {
+                var sl = GetStrideLength();
+                var sc = GetTotalStrides();
+
+                long offset = sl * (sc - strideCounter);
+                Fits.WrappedStream.Seek(offset, SeekOrigin.Current);
+            }
+
+            Fits.SkipBlock();
+        }
+
+        #endregion
+        #region Write functions
+
+        public virtual void WriteHeader()
+        {
+            // Make sure header is written only once
+            if (!headerWritten)
+            {
+                // Save start position
+                headerPosition = Fits.WrappedStream.Position;
+
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    cards[i].Write(Fits.WrappedStream);
+                }
+
+                // Skip block
+                Fits.SkipBlock();
+                dataPosition = Fits.WrappedStream.Position;
+
+                headerWritten = true;
+            }
         }
 
         #endregion
