@@ -16,6 +16,7 @@ namespace Jhu.SharpFitsIO
         private FitsDataType dataType;
         private string unit;
         private string format;
+        private string comment;
 
         #region Properties
 
@@ -76,15 +77,21 @@ namespace Jhu.SharpFitsIO
             set { format = value; }
         }
 
+        public string Comment
+        {
+            get { return comment; }
+            set { comment = value; }
+        }
+
         #endregion
         #region Constructors and initializers
 
-        public FitsTableColumn()
+        internal FitsTableColumn()
         {
             InitializeMembers();
         }
 
-        public FitsTableColumn(FitsTableColumn old)
+        internal FitsTableColumn(FitsTableColumn old)
         {
             CopyMembers(old);
         }
@@ -110,6 +117,26 @@ namespace Jhu.SharpFitsIO
         public object Clone()
         {
             return new FitsTableColumn(this);
+        }
+
+        #endregion
+        #region Static factory functions
+
+        public static FitsTableColumn Create(string name, FitsDataType dataType)
+        {
+            return Create(name, dataType, null, null);
+        }
+
+        public static FitsTableColumn Create(string name, FitsDataType dataType, string unit, string format)
+        {
+            var col = new FitsTableColumn();
+
+            col.name = name;
+            col.dataType = dataType;
+            col.unit = unit;
+            col.format = format;
+
+            return col;
         }
 
         #endregion

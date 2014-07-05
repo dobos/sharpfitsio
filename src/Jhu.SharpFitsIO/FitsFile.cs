@@ -590,10 +590,22 @@ namespace Jhu.SharpFitsIO
         /// <summary>
         /// Advances the stream to the next 2880 byte block
         /// </summary>
-        public void SkipBlock()
+        internal void SkipBlock()
         {
-            var offset = 2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position;
-            wrappedStream.Seek(offset, SeekOrigin.Current);
+            var offset = (int)(2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position);
+
+            if (offset > 0)
+            {
+                switch (fileMode)
+                {
+                    case FitsFileMode.Read:
+                        wrappedStream.Seek(offset, SeekOrigin.Current);
+                        break;
+                    case FitsFileMode.Write:
+                        wrappedStream.Write(new byte[offset], 0, offset);
+                        break;
+                }
+            }
         }
     }
 }

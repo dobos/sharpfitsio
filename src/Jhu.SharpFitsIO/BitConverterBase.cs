@@ -11,7 +11,7 @@ namespace Jhu.SharpFitsIO
 
         unsafe protected abstract void PutBytes(byte* dst, byte[] src, int startIndex, int count);
 
-        unsafe protected abstract void GetBytes(byte* src, byte[] dst, int startIndex, int count);
+        unsafe protected abstract int GetBytes(byte* src, byte[] dst, int startIndex, int count);
 
         #region Boolean
 
@@ -393,69 +393,75 @@ namespace Jhu.SharpFitsIO
 
         // ---
 
-        unsafe public void GetBytes(Boolean value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Boolean value, byte[] bytes, int startIndex)
         {
             bytes[startIndex] = value ? (Byte)0x01 : (Byte)0x00;
+            return sizeof(Byte);
         }
 
-        unsafe public void GetBytes(SByte value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Byte value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 1);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Byte));
         }
 
-        public void GetBytes(Char value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(SByte value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SByte));
+        }
+
+        public int GetBytes(Char value, byte[] bytes, int startIndex)
         {
             throw new NotImplementedException();
         }
 
-        unsafe public void GetBytes(Int16 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Int16 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 2);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int16));
         }
 
-        unsafe public void GetBytes(UInt16 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(UInt16 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 2);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt16));
         }
 
-        unsafe public void GetBytes(Int32 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Int32 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 4);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int32));
         }
 
-        unsafe public void GetBytes(UInt32 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(UInt32 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 4);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt32));
         }
 
-        unsafe public void GetBytes(Int64 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Int64 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 8);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int64));
         }
 
-        unsafe public void GetBytes(UInt64 value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(UInt64 value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 8);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt64));
         }
 
-        unsafe public void GetBytes(Single value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Single value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 4);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Single));
         }
 
-        unsafe public void GetBytes(Double value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(Double value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 8);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Double));
         }
 
-        unsafe public void GetBytes(SingleComplex value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(SingleComplex value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 8);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SingleComplex));
         }
 
-        unsafe public void GetBytes(DoubleComplex value, byte[] bytes, int startIndex)
+        unsafe public int GetBytes(DoubleComplex value, byte[] bytes, int startIndex)
         {
-            GetBytes((byte*)&value, bytes, startIndex, 16);
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(DoubleComplex));
         }
     }
 }

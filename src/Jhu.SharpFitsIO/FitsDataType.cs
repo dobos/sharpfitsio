@@ -156,7 +156,7 @@ namespace Jhu.SharpFitsIO
             InitializeMembers();
         }
 
-        public FitsDataType(FitsDataType old)
+        internal FitsDataType(FitsDataType old)
         {
             CopyMembers(old);
         }
@@ -188,6 +188,63 @@ namespace Jhu.SharpFitsIO
         public object Clone()
         {
             return new FitsDataType(this);
+        }
+
+        #endregion
+        #region Static factory functions
+
+        public static FitsDataType Create(Type type)
+        {
+            if (type == typeof(Boolean))
+            {
+                return FitsDataTypes.Logical;
+            }
+            else if (type == typeof(Byte))
+            {
+                return FitsDataTypes.Byte;
+            }
+            else if (type == typeof(Int16))
+            {
+                return FitsDataTypes.Int16;
+            }
+            else if (type == typeof(Int32))
+            {
+                return FitsDataTypes.Int32;
+            }
+            else if (type == typeof(Int64))
+            {
+                return FitsDataTypes.Int64;
+            }
+            else if (type == typeof(Char))
+            {
+                return FitsDataTypes.Char;
+            }
+            else if (type == typeof(Single))
+            {
+                return FitsDataTypes.Single;
+            }
+            else if (type == typeof(Double))
+            {
+                return FitsDataTypes.Double;
+            }
+            else if (type == typeof(SingleComplex))
+            {
+                return FitsDataTypes.SingleComplex;
+            }
+            else if (type == typeof(DoubleComplex))
+            {
+                return FitsDataTypes.DoubleComplex;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public static FitsDataType Create(Type type, int repeat)
+        {
+            var fdt = FitsDataType.Create(type);
+            fdt.repeat = repeat;
+
+            return fdt;
         }
 
         #endregion
@@ -267,7 +324,7 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        public string GetTFormString()
+        internal string GetTFormString()
         {
             return repeat.ToString(FitsFile.Culture) + code;
         }

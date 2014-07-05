@@ -1,21 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
+using System.Linq.Expressions;
 
 namespace Jhu.SharpFitsIO
 {
     public class BinaryTableHdu : HduBase, ICloneable
     {
+        // TODO: cache compiled lambdas to prevent leaks
+
         private delegate int ByteReaderDelegate(BitConverterBase converter, byte[] buffer, int startIndex, int count, out object value);
+        private delegate int ByteWriterDelegate(BitConverterBase converter, byte[] buffer, int startIndex, object value, FitsTableColumn column);
 
         #region Private member variables
 
         [NonSerialized]
         private ByteReaderDelegate[] columnByteReaders;
+
+        [NonSerialized]
+        private ByteWriterDelegate[] columnByteWriters;
 
         /// <summary>
         /// Collection of table columns
@@ -30,9 +38,12 @@ namespace Jhu.SharpFitsIO
         /// Gets the collection containing columns of the data file
         /// </summary>
         [IgnoreDataMember]
-        public List<FitsTableColumn> Columns
+        public ReadOnlyCollection<FitsTableColumn> Columns
         {
-            get { return columns; }
+            get
+            {
+                return new ReadOnlyCollection<FitsTableColumn>(columns);
+            }
         }
 
         #endregion
@@ -72,7 +83,7 @@ namespace Jhu.SharpFitsIO
         {
             InitializeMembers();
 
-            ProcessColumnCards();
+            DetectColumns();
         }
 
         private BinaryTableHdu(BinaryTableHdu old)
@@ -84,12 +95,14 @@ namespace Jhu.SharpFitsIO
         private void InitializeMembers()
         {
             this.columnByteReaders = null;
+            this.columnByteWriters = null;
             this.columns = new List<FitsTableColumn>();
         }
 
         private void CopyMembers(BinaryTableHdu old)
         {
             this.columnByteReaders = null;
+            this.columnByteWriters = null;
             this.columns = new List<FitsTableColumn>();
             foreach (var columns in old.columns)
             {
@@ -148,7 +161,7 @@ namespace Jhu.SharpFitsIO
         /// <summary>
         /// Detects columns from header cards.
         /// </summary>
-        private void ProcessColumnCards()
+        private void DetectColumns()
         {
             columns.Clear();
 
@@ -169,17 +182,40 @@ namespace Jhu.SharpFitsIO
         }
 
         /// <summary>
-        /// Creates header cards for columns
+        /// Creates columns from a list of predefined columns
         /// </summary>
-        private void SetColumnCards()
+        /// <param name="columns"></param>
+        public void CreateColumns(IList<FitsTableColumn> columns)
         {
-
-            // TODO: where to call this from? expose as public and call from wrraper?
+            this.columns.Clear();
+            // TODO: delete all header column cards
 
             for (int i = 0; i < columns.Count; i++)
             {
+                // Set column index
+                columns[i].ID = i;
+
+                // Create header cards
                 columns[i].SetCards(this);
+
+                // Append column
+                this.columns.Add(columns[i]);
             }
+
+            // Set stride size
+            SetAxisLength(1, GetStrideLength());
+
+            InitializeColumnByteWriters();
+        }
+
+        /// <summary>
+        /// Creates columns from the fields of a structure
+        /// </summary>
+        /// <param name="structType"></param>
+        public void CreateColumns(Type structType)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         private void InitializeColumnByteReaders()
@@ -188,7 +224,17 @@ namespace Jhu.SharpFitsIO
 
             for (int i = 0; i < columnByteReaders.Length; i++)
             {
-                columnByteReaders[i] = GetByteReaderDelegate(Columns[i]);
+                columnByteReaders[i] = CreateByteReaderDelegate(Columns[i]);
+            }
+        }
+
+        private void InitializeColumnByteWriters()
+        {
+            columnByteWriters = new ByteWriterDelegate[Columns.Count];
+
+            for (int i = 0; i < columnByteWriters.Length; i++)
+            {
+                columnByteWriters[i] = CreateByteWriterDelegate(Columns[i]);
             }
         }
 
@@ -221,13 +267,43 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public bool ReadNextRow<T>(out T values)
+            where T : struct
+        {
+            // TODO
+
+            values = default(T);
+
+            return false;
+        }
+
+        public void WriteNextRow(object[] values)
+        {
+            CreateStrideBuffer();
+
+            int startIndex = 0;
+            for (int i = 0; i < Columns.Count; i++)
+            {
+                var res = columnByteWriters[i](
+                    Fits.BitConverter,
+                    StrideBuffer,
+                    startIndex,
+                    values[i],
+                    Columns[i]);
+
+                startIndex += res;
+            }
+
+            WriteStride();
+        }
+
         /// <summary>
         /// Returns a delegate to read the specific column into a boxed 
         /// strongly typed variable
         /// </summary>
         /// <param name="column"></param>
         /// <returns></returns>
-        private ByteReaderDelegate GetByteReaderDelegate(FitsTableColumn column)
+        private ByteReaderDelegate CreateByteReaderDelegate(FitsTableColumn column)
         {
             // Complex types firts, then scalar and arrays
             if (column.DataType.Type == typeof(String))
@@ -534,6 +610,65 @@ namespace Jhu.SharpFitsIO
                     throw new NotImplementedException();
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates code to write a specific type of column
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private ByteWriterDelegate CreateByteWriterDelegate(FitsTableColumn column)
+        {
+            // The generated code is approximately the following:
+
+            // return delegate(BitConverterBase converter, byte[] bytes, int startIndex, object value, FitsTableColumn col)
+            // {
+            //    var val = (Boolean)value;
+            //    return converter.GetBytes(val, bytes, startIndex);
+            //};
+
+            // Delegate type
+            var delegateType = typeof(ByteWriterDelegate);
+
+            // Function parameters
+            var converter = Expression.Parameter(typeof(BitConverterBase), "converter");
+            var bytes = Expression.Parameter(typeof(byte[]), "bytes");
+            var startIndex = Expression.Parameter(typeof(int), "startIndex");
+            var value = Expression.Parameter(typeof(object), "value");
+            var col = Expression.Parameter(typeof(FitsTableColumn), "column");
+
+            var getBytesMethod = typeof(BitConverterBase).GetMethod(
+                "GetBytes",
+                new[] {
+                    column.DataType.Type,
+                    typeof(byte[]),
+                    typeof(int)
+                });
+
+            var unbox = Expression.Unbox(value, column.DataType.Type);
+
+            var fc = Expression.Call(
+                converter,
+                getBytesMethod,
+                unbox,
+                bytes,
+                startIndex);
+
+            var lambda = Expression.Lambda(
+                delegateType,
+                fc,
+                new ParameterExpression[]
+                { 
+                    converter,
+                    bytes,
+                    startIndex,
+                    value,
+                    col
+                });
+
+            var fn = lambda.Compile();
+
+            return (ByteWriterDelegate)fn;
         }
     }
 }

@@ -16,6 +16,7 @@ namespace Jhu.SharpFitsIO
     {
         #region Private member variables
 
+        private HduBase hdu;
         private List<Card> cardList;
         private Dictionary<string, Card> cardDictionary;
 
@@ -101,9 +102,11 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Constructors and initializers
 
-        public CardCollection()
+        internal CardCollection(HduBase hdu)
         {
             InitializeMembers();
+
+            this.hdu = hdu;
         }
 
         public CardCollection(CardCollection old)
@@ -113,12 +116,14 @@ namespace Jhu.SharpFitsIO
 
         private void InitializeMembers()
         {
+            this.hdu = null;
             this.cardList = new List<Card>();
             this.cardDictionary = new Dictionary<string, Card>(FitsFile.Comparer);
         }
 
         private void CopyMembers(CardCollection old)
         {
+            this.hdu = old.hdu;
             this.cardList = new List<Card>();
             this.cardDictionary = new Dictionary<string, Card>(FitsFile.Comparer);
 
@@ -127,7 +132,7 @@ namespace Jhu.SharpFitsIO
                 var ncard = (Card)card.Clone();
 
                 this.cardList.Add(ncard);
-                if (ncard.IsComment)
+                if (!ncard.IsComment)
                 {
                     this.cardDictionary.Add(ncard.Keyword, ncard);
                 }
@@ -135,11 +140,22 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
+
+        private void EnsureModifiable()
+        {
+            if (hdu.State != HduBase.ObjectState.Start)
+            {
+                throw new InvalidOperationException();  // TODO
+            }
+        }
+
         #region Collection interface functions
 
         public void Add(Card card)
         {
-            if (card.IsComment)
+            EnsureModifiable();
+
+            if (!card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);
             }
@@ -149,7 +165,9 @@ namespace Jhu.SharpFitsIO
 
         public void Insert(int index, Card card)
         {
-            if (card.IsComment)
+            EnsureModifiable();
+
+            if (!card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);
             }
@@ -159,7 +177,9 @@ namespace Jhu.SharpFitsIO
 
         public void RemoveAt(int index)
         {
-            if (cardList[index].IsComment)
+            EnsureModifiable();
+
+            if (!cardList[index].IsComment)
             {
                 cardDictionary.Remove(cardList[index].Keyword);
             }
@@ -169,13 +189,17 @@ namespace Jhu.SharpFitsIO
 
         public bool Remove(string key)
         {
+            EnsureModifiable();
+
             cardList.Remove(cardDictionary[key]);
             return cardDictionary.Remove(key);
         }
 
         public bool Remove(Card card)
         {
-            if (card.IsComment)
+            EnsureModifiable();
+
+            if (!card.IsComment)
             {
                 cardDictionary.Remove(card.Keyword);
             }
@@ -185,11 +209,15 @@ namespace Jhu.SharpFitsIO
 
         public bool Remove(KeyValuePair<string, Card> item)
         {
+            EnsureModifiable();
+
             return Remove(item.Key);
         }
 
         public void Clear()
         {
+            EnsureModifiable();
+
             cardList.Clear();
             cardDictionary.Clear();
         }
@@ -248,6 +276,8 @@ namespace Jhu.SharpFitsIO
 
         public void Set(Card card)
         {
+            EnsureModifiable();
+
             if (card.IsComment)
             {
                 throw new InvalidOperationException();  // TODO

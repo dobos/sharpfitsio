@@ -33,8 +33,7 @@ namespace Jhu.SharpFitsIO
         {
             get
             {
-                return !FitsFile.CommentKeywords.Contains(keyword) &&
-                    keyword != String.Empty;
+                return !String.IsNullOrWhiteSpace(keyword) && FitsFile.CommentKeywords.Contains(keyword);
             }
         }
 

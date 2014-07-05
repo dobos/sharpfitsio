@@ -22,7 +22,7 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        protected override unsafe void GetBytes(byte* src, byte[] dst, int startIndex, int count)
+        protected override unsafe int GetBytes(byte* src, byte[] dst, int startIndex, int count)
         {
             byte* ps = src + count;
 
@@ -30,6 +30,8 @@ namespace Jhu.SharpFitsIO
             {
                 dst[startIndex + i] = *(--ps);
             }
+
+            return count;
         }        
     }
 }
