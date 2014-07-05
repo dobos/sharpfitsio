@@ -95,7 +95,7 @@ namespace Jhu.SharpFitsIO
         /// Stores the hdus read/written so far.
         /// </summary>
         [NonSerialized]
-        private List<HduBase> hdus;
+        private List<SimpleHdu> hdus;
 
         /// <summary>
         /// Points to the current hdu in the hdus collection
@@ -186,7 +186,7 @@ namespace Jhu.SharpFitsIO
         /// Gets a collection of HDUs blocks.
         /// </summary>
         [IgnoreDataMember]
-        protected List<HduBase> Hdus
+        protected List<SimpleHdu> Hdus
         {
             get { return hdus; }
         }
@@ -257,7 +257,7 @@ namespace Jhu.SharpFitsIO
             this.endianness = Endianness.BigEndian;
             this.bitConverter = null;
 
-            this.hdus = new List<HduBase>();
+            this.hdus = new List<SimpleHdu>();
             this.hduCounter = -1;
         }
 
@@ -274,10 +274,10 @@ namespace Jhu.SharpFitsIO
             this.bitConverter = old.bitConverter;
 
             // Deep copy HDUs
-            this.hdus = new List<HduBase>();
+            this.hdus = new List<SimpleHdu>();
             foreach (var hdu in old.hdus)
             {
-                this.hdus.Add((HduBase)hdu.Clone());
+                this.hdus.Add((SimpleHdu)hdu.Clone());
             }
             this.hduCounter = old.hduCounter;
         }
@@ -492,7 +492,7 @@ namespace Jhu.SharpFitsIO
         /// Skips reading the rest of the current HDU, so data will not
         /// be read into memory.
         /// </remarks>
-        public HduBase ReadNextHdu()
+        public SimpleHdu ReadNextHdu()
         {
             if (hduCounter != -1)
             {
@@ -506,7 +506,7 @@ namespace Jhu.SharpFitsIO
             {
                 hduCounter++;
 
-                HduBase nextHdu;
+                SimpleHdu nextHdu;
 
                 // If blocks are created manually, the blocks collection might already
                 // contain an object for the next file block. In this case, use the
@@ -548,9 +548,9 @@ namespace Jhu.SharpFitsIO
             return null;
         }
 
-        private HduBase ReadNextHdu(HduBase prototype)
+        private SimpleHdu ReadNextHdu(SimpleHdu prototype)
         {
-            HduBase hdu;
+            SimpleHdu hdu;
 
             if (prototype != null)
             {
@@ -559,7 +559,7 @@ namespace Jhu.SharpFitsIO
             }
             else
             {
-                hdu = new HduBase(this);
+                hdu = new SimpleHdu(this);
             }
 
             hdu.ReadHeader();

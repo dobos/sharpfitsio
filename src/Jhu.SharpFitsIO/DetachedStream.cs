@@ -17,7 +17,7 @@ namespace Jhu.SharpFitsIO
     /// is fixed in .Net 4.5 where reader/writer wrappers have an additional constructor
     /// parameter that tells the class to leave the underlying streams open.
     /// </remarks>
-    public class DetachedStream : Stream
+    internal class DetachedStream : Stream
     {
         private Stream baseStream;
 

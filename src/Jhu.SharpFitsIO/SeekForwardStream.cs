@@ -11,7 +11,7 @@ namespace Jhu.SharpFitsIO
     /// stream and supports seeking forward, even if the stream is sequential
     /// read only.
     /// </summary>
-    public class SeekForwardStream : Stream
+    internal class SeekForwardStream : Stream
     {
         #region Private members
 

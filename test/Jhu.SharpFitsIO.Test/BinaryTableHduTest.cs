@@ -43,7 +43,7 @@ namespace Jhu.SharpFitsIO
             fits = CreateFitsFile();
 
             // Primary header
-            var prim = HduBase.Create(fits, true, true, true);
+            var prim = SimpleHdu.Create(fits, true, true, true);
             prim.WriteHeader();
 
             // Table

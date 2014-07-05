@@ -8,8 +8,11 @@ using System.Runtime.Serialization;
 
 namespace Jhu.SharpFitsIO
 {
-    // TODO: rename to SimpleHDU or simply HDU
-    public class HduBase : ICloneable
+    /// <summary>
+    /// Represents a simple, empty FITS HDU
+    /// </summary>
+    [Serializable]
+    public class SimpleHdu : ICloneable
     {
         internal enum ObjectState
         {
@@ -311,14 +314,14 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Constructors and initializers
 
-        internal HduBase(FitsFile file)
+        internal SimpleHdu(FitsFile file)
         {
             InitializeMembers(new StreamingContext());
 
             this.file = file;
         }
 
-        internal HduBase(HduBase old)
+        internal SimpleHdu(SimpleHdu old)
         {
             CopyMembers(old);
         }
@@ -340,7 +343,7 @@ namespace Jhu.SharpFitsIO
             this.strideCounter = 0;
         }
 
-        private void CopyMembers(HduBase old)
+        private void CopyMembers(SimpleHdu old)
         {
             this.file = old.file;
 
@@ -358,15 +361,15 @@ namespace Jhu.SharpFitsIO
 
         public virtual object Clone()
         {
-            return new HduBase(this);
+            return new SimpleHdu(this);
         }
 
         #endregion
         #region Static create functions
 
-        public static HduBase Create(FitsFile fits, bool initialize, bool primary, bool hasExtensions)
+        public static SimpleHdu Create(FitsFile fits, bool initialize, bool primary, bool hasExtensions)
         {
-            var hdu = new HduBase(fits);
+            var hdu = new SimpleHdu(fits);
 
             if (initialize)
             {

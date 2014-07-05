@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    public class ImageHdu : HduBase, ICloneable
+    public class ImageHdu : SimpleHdu, ICloneable
     {
         internal ImageHdu(FitsFile fits)
             : base(fits)
@@ -13,7 +13,7 @@ namespace Jhu.SharpFitsIO
             InitializeMembers();
         }
 
-        internal ImageHdu(HduBase hdu)
+        internal ImageHdu(SimpleHdu hdu)
             :base(hdu)
         {
             InitializeMembers();

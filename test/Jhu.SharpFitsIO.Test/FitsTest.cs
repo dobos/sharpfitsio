@@ -57,8 +57,8 @@ namespace Jhu.SharpFitsIO
             }
 
             int q = 0;
-            HduBase hdu;
-            while ((hdu = (HduBase)f.ReadNextHdu()) != null)
+            SimpleHdu hdu;
+            while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
                 q++;
             }
@@ -103,8 +103,8 @@ namespace Jhu.SharpFitsIO
             }
 
             //
-            HduBase hdu;
-            while ((hdu = (HduBase)f.ReadNextHdu()) != null)
+            SimpleHdu hdu;
+            while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
             }
 
@@ -116,8 +116,8 @@ namespace Jhu.SharpFitsIO
         {
             var f = OpenFits("sdssdr7_spSpec.fit");
 
-            HduBase hdu;
-            while ((hdu = (HduBase)f.ReadNextHdu()) != null)
+            SimpleHdu hdu;
+            while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
             }
 
@@ -129,8 +129,8 @@ namespace Jhu.SharpFitsIO
         {
             var f = OpenFits("herschel_level2.fits");
 
-            HduBase hdu;
-            while ((hdu = (HduBase)f.ReadNextHdu()) != null)
+            SimpleHdu hdu;
+            while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
             }
 

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    public static class Constants
+    internal static class Constants
     {
         public const string FitsKeywordSimple = "SIMPLE";
         public const string FitsKeywordExtend = "EXTEND";

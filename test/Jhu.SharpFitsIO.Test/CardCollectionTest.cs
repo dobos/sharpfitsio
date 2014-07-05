@@ -13,7 +13,7 @@ namespace Jhu.SharpFitsIO
         [TestMethod]
         public void AddTest()
         {
-            var cc = new CardCollection(null);
+            var cc = new CardCollection((SimpleHdu)null);
 
             cc.Add(new Card("TEST1"));
 

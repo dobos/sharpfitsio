@@ -12,11 +12,12 @@ namespace Jhu.SharpFitsIO
     /// The collection handles both unique and non-unique headers. Unique
     /// headers are also stored in a dictionary for fast lookup by keyword.
     /// </remarks>
+    [Serializable]
     public class CardCollection : IList<Card>
     {
         #region Private member variables
 
-        private HduBase hdu;
+        private SimpleHdu hdu;
         private List<Card> cardList;
         private Dictionary<string, Card> cardDictionary;
 
@@ -102,7 +103,7 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Constructors and initializers
 
-        internal CardCollection(HduBase hdu)
+        internal CardCollection(SimpleHdu hdu)
         {
             InitializeMembers();
 
@@ -143,7 +144,7 @@ namespace Jhu.SharpFitsIO
 
         private void EnsureModifiable()
         {
-            if (hdu.State != HduBase.ObjectState.Start)
+            if (hdu.State != SimpleHdu.ObjectState.Start)
             {
                 throw new InvalidOperationException();  // TODO
             }

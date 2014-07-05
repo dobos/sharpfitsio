@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 
 namespace Jhu.SharpFitsIO
 {
-    public class BinaryTableHdu : HduBase, ICloneable
+    public class BinaryTableHdu : SimpleHdu, ICloneable
     {
         // TODO: cache compiled lambdas to prevent leaks
 
@@ -109,7 +109,7 @@ namespace Jhu.SharpFitsIO
             InitializeMembers();
         }
 
-        internal BinaryTableHdu(HduBase hdu)
+        internal BinaryTableHdu(SimpleHdu hdu)
             : base(hdu)
         {
             InitializeMembers();

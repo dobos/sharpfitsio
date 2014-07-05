@@ -6,7 +6,7 @@ using System.Text;
 namespace Jhu.SharpFitsIO
 {
     /// <summary>
-    /// Represents a binary table HDU column
+    /// Represents a binary or ascii table column
     /// </summary>
     [Serializable]
     public class FitsTableColumn : ICloneable
