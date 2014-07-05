@@ -432,37 +432,6 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        /// <summary>
-        /// Sort cards according to the FITS standard
-        /// </summary>
-        protected virtual void SortCards()
-        {
-            // TODO: add more constraints:
-
-            // simple / xtension
-            // bitpix must be second
-            // naxis
-            // naxis1..N
-            // pcount
-            // gcount
-            // tfields
-            // t....
-            // ...
-            // all the rest
-
-            // Move END to the very end
-            for (int i = 0; i < cards.Count - 1; i++)
-            {
-                if (FitsFile.Comparer.Compare(cards[i].Keyword, Constants.FitsKeywordEnd) == 0)
-                {
-                    var end = cards[i];
-                    cards.RemoveAt(i);
-                    cards.Add(end);
-                    break;
-                }
-            }
-        }
-
         #endregion
         #region Header functions
 
@@ -500,8 +469,6 @@ namespace Jhu.SharpFitsIO
             Fits.SkipBlock();
             dataPosition = Fits.WrappedStream.Position;
 
-            CreateStrideBuffer();
-
             state = ObjectState.Header;
         }
 
@@ -520,7 +487,7 @@ namespace Jhu.SharpFitsIO
             }
 
             // Sort cards so that their order conforms to the standard
-            SortCards();
+            cards.Sort();
 
             // Save start position
             headerPosition = Fits.WrappedStream.Position;
@@ -563,7 +530,7 @@ namespace Jhu.SharpFitsIO
         {
             int total = 1;
 
-            for (int i = 1; i < AxisCount - 1; i++)
+            for (int i = 1; i < AxisCount; i++)
             {
                 total *= GetAxisLength(i + 1);
             }
@@ -583,19 +550,19 @@ namespace Jhu.SharpFitsIO
 
         protected void CreateStrideBuffer()
         {
-            if (strideBuffer == null)
-            {
-                strideBuffer = new byte[GetStrideLength()];
-                totalStrides = GetTotalStrides();
-                strideCounter = 0;
-            }
+            strideBuffer = new byte[GetStrideLength()];
+            totalStrides = GetTotalStrides();
+            strideCounter = 0;
         }
 
         public byte[] ReadStride()
         {
             EnsureDuringStrides();
 
-            CreateStrideBuffer();
+            if (strideBuffer == null)
+            {
+                CreateStrideBuffer();
+            }
 
             if (strideBuffer.Length != Fits.WrappedStream.Read(strideBuffer, 0, strideBuffer.Length))
             {

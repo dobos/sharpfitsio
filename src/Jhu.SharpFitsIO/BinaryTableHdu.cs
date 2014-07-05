@@ -339,7 +339,11 @@ namespace Jhu.SharpFitsIO
 
         public void WriteNextRow(object[] values)
         {
-            CreateStrideBuffer();
+            if (StrideBuffer == null)
+            {
+                CreateStrideBuffer();
+            }
+
             InitializeColumnByteWriters();
 
             int startIndex = 0;
@@ -361,7 +365,11 @@ namespace Jhu.SharpFitsIO
         public void WriteNextRow<T>(T values)
             where T : struct
         {
-            CreateStrideBuffer();
+            if (StrideBuffer == null)
+            {
+                CreateStrideBuffer();
+            }
+
             InitializeColumnByteWriters(typeof(T));
 
             int startIndex = 0;

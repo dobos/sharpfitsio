@@ -19,31 +19,6 @@ namespace Jhu.SharpFitsIO
         public static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 
         #endregion
-        #region Static members
-
-        /// <summary>
-        /// Hold a set of keywords that are not to be treated as unique
-        /// </summary>
-        [NonSerialized]
-        private static HashSet<string> commentKeywords;
-
-        /// <summary>
-        /// Gets a set of keywords that are not to be treated as unique.
-        /// </summary>
-        public static HashSet<string> CommentKeywords
-        {
-            get { return commentKeywords; }
-        }
-
-        static FitsFile()
-        {
-            commentKeywords = new HashSet<string>(Comparer);
-            commentKeywords.Add(Constants.FitsKeywordComment);
-            commentKeywords.Add(Constants.FitsKeywordContinue);
-            commentKeywords.Add(Constants.FitsKeywordHierarch);
-        }
-
-        #endregion
         #region Private member variables
 
         /// <summary>

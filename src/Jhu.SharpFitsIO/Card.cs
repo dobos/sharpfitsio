@@ -9,9 +9,10 @@ using System.Globalization;
 namespace Jhu.SharpFitsIO
 {
     [Serializable]
-    public class Card : ICloneable
+    public class Card : ICloneable, IComparable
     {
         private static readonly Regex StringRegex = new Regex(@"'(?:[^']|'{2})*'");
+        private static readonly Regex KeywordRegex = new Regex(@"([a-zA-Z_]+)([0-9]*)");
 
         private string keyword;
         private string rawValue;
@@ -33,7 +34,7 @@ namespace Jhu.SharpFitsIO
         {
             get
             {
-                return !String.IsNullOrWhiteSpace(keyword) && FitsFile.CommentKeywords.Contains(keyword);
+                return !String.IsNullOrWhiteSpace(keyword) && Constants.CommentKeywords.Contains(keyword);
             }
         }
 
@@ -270,6 +271,56 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
+
+        private void GetKeywordParts(out string keyword, out int id, out int order)
+        {
+            // Split into keyword and counter
+            var m = KeywordRegex.Match(this.keyword);
+
+            keyword = m.Groups[1].Value;
+
+            if (!int.TryParse(m.Groups[2].Value, out id))
+            {
+                id = -1;
+            }
+
+            if (Constants.KeywordOrder.ContainsKey(keyword))
+            {
+                order = Constants.KeywordOrder[keyword];
+            }
+            else
+            {
+                order = int.MaxValue / 2;
+            }
+        }
+
+        public int CompareTo(object obj)
+        {
+            var other = (Card)obj;
+
+            string akey, bkey;
+            int aid, bid;
+            int aord, bord;
+
+            this.GetKeywordParts(out akey, out aid, out aord);
+            other.GetKeywordParts(out bkey, out bid, out bord);
+
+            if (aord != bord)
+            {
+                // First sort on keyword
+                return aord - bord;
+            }
+            else if (aid != bid)
+            {
+                // Or on keyword id, if possible
+                return aid - bid;
+            }
+            else
+            {
+                // Otherwise assume they are equal
+                return 0;
+            }
+        }
 
         public override string ToString()
         {

@@ -55,10 +55,10 @@
     <Compile Include="FitsException.cs" />
     <Compile Include="FitsFile.cs" />
     <Compile Include="FitsTableColumn.cs" />
-    <Compile Include="HduBase.cs" />
     <Compile Include="ImageHdu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SeekForwardStream.cs" />
+    <Compile Include="SimpleHdu.cs" />
     <Compile Include="SingleComplex.cs" />
     <Compile Include="StraightBitConverter.cs" />
     <Compile Include="SwapBitConverter.cs" />

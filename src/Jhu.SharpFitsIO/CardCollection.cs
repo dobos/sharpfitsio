@@ -312,5 +312,13 @@ namespace Jhu.SharpFitsIO
         }
 
         #endregion
+
+        /// <summary>
+        /// Sort cards according to the FITS standard
+        /// </summary>
+        public void Sort()
+        {
+            cardList.Sort();         
+        }
     }
 }

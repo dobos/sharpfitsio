@@ -14,8 +14,8 @@ namespace Jhu.SharpFitsIO
         public const string FitsKeywordBitPix = "BITPIX";
         public const string FitsKeywordNAxis = "NAXIS";
         public const string FitsKeywordTFields = "TFIELDS";
-        public const string FitsKeywordGCount = "GCOUNT";
         public const string FitsKeywordPCount = "PCOUNT";
+        public const string FitsKeywordGCount = "GCOUNT";
         public const string FitsKeywordTHeap = "THEAP";
         public const string FitsKeywordTForm = "TFORM";
         public const string FitsKeywordTType = "TTYPE";
@@ -45,5 +45,28 @@ namespace Jhu.SharpFitsIO
         public const string FitsTypeNameSingleComplex = "SingleComplex";
         public const string FitsTypeNameDoubleComplex = "DoubleComplex";
         public const string FitsTypeNameArray = "Array";
+
+        /// <summary>
+        /// Gets a set of keywords that are not to be treated as unique.
+        /// </summary>
+        public static readonly HashSet<string> CommentKeywords = new HashSet<string>(FitsFile.Comparer)
+        {
+            Constants.FitsKeywordComment,
+            Constants.FitsKeywordContinue,
+            Constants.FitsKeywordHierarch
+        };
+
+        public static readonly Dictionary<string, int> KeywordOrder = new Dictionary<string, int>(FitsFile.Comparer)
+        {
+            {FitsKeywordSimple, 0},
+            {FitsKeywordXtension, 1},
+            {FitsKeywordBitPix, 2},
+            {FitsKeywordNAxis, 3},
+            {FitsKeywordPCount, 4},
+            {FitsKeywordGCount, 5},
+            {FitsKeywordTFields, 6},
+
+            {FitsKeywordEnd, int.MaxValue},
+        };
     }
 }
