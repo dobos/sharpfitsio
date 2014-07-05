@@ -16,6 +16,7 @@ namespace Jhu.SharpFitsIO
 
         private delegate int ByteReaderDelegate(BitConverterBase converter, byte[] buffer, int startIndex, int count, out object value);
         private delegate int ByteWriterDelegate(BitConverterBase converter, byte[] buffer, int startIndex, object value, FitsTableColumn column);
+        private delegate int StructWriterDelegate(BitConverterBase converter, byte[] buffer, int startIndex, object value);
 
         #region Private member variables
 
@@ -52,6 +53,20 @@ namespace Jhu.SharpFitsIO
         public int ColumnCount
         {
             get { return Cards[Constants.FitsKeywordTFields].GetInt32(); }
+            private set
+            {
+                EnsureModifiable();
+
+                var card = new Card(Constants.FitsKeywordTFields);
+                card.SetValue(value);
+                Cards.Set(card);
+            }
+        }
+
+        public int RowCount
+        {
+            get { return GetAxisLength(2); }
+            set { SetAxisLength(2, value); }
         }
 
         public int HeapOffset
@@ -59,14 +74,30 @@ namespace Jhu.SharpFitsIO
             get { return Cards[Constants.FitsKeywordTHeap].GetInt32(); }
         }
 
-        public int GroupCount
-        {
-            get { return Cards[Constants.FitsKeywordGCount].GetInt32(); }
-        }
-
         public int ParameterCount
         {
             get { return Cards[Constants.FitsKeywordPCount].GetInt32(); }
+            set
+            {
+                EnsureModifiable();
+
+                var card = new Card(Constants.FitsKeywordPCount);
+                card.SetValue(value);
+                Cards.Set(card);
+            }
+        }
+
+        public int GroupCount
+        {
+            get { return Cards[Constants.FitsKeywordGCount].GetInt32(); }
+            set
+            {
+                EnsureModifiable();
+
+                var card = new Card(Constants.FitsKeywordGCount);
+                card.SetValue(value);
+                Cards.Set(card);
+            }
         }
 
         #endregion
@@ -141,6 +172,11 @@ namespace Jhu.SharpFitsIO
             AxisCount = 2;
             SetAxisLength(1, 0);
             SetAxisLength(2, 0);
+
+            ParameterCount = 0;
+            GroupCount = 1;
+
+            //ExtensionName = "UNNAMED";
         }
 
         #endregion
@@ -190,10 +226,12 @@ namespace Jhu.SharpFitsIO
             this.columns.Clear();
             // TODO: delete all header column cards
 
+            ColumnCount = columns.Count;
+
             for (int i = 0; i < columns.Count; i++)
             {
                 // Set column index
-                columns[i].ID = i;
+                columns[i].ID = i + 1;
 
                 // Create header cards
                 columns[i].SetCards(this);
@@ -204,8 +242,6 @@ namespace Jhu.SharpFitsIO
 
             // Set stride size
             SetAxisLength(1, GetStrideLength());
-
-            InitializeColumnByteWriters();
         }
 
         /// <summary>
@@ -214,8 +250,16 @@ namespace Jhu.SharpFitsIO
         /// <param name="structType"></param>
         public void CreateColumns(Type structType)
         {
-            // TODO
-            throw new NotImplementedException();
+            // Enumerate fields and generate columns
+            var fields = structType.GetFields();
+            var columns = new FitsTableColumn[fields.Length];
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                columns[i] = FitsTableColumn.Create(fields[i].Name, FitsDataType.Create(fields[i].FieldType));
+            }
+
+            CreateColumns(columns);
         }
 
         private void InitializeColumnByteReaders()
@@ -230,11 +274,27 @@ namespace Jhu.SharpFitsIO
 
         private void InitializeColumnByteWriters()
         {
-            columnByteWriters = new ByteWriterDelegate[Columns.Count];
-
-            for (int i = 0; i < columnByteWriters.Length; i++)
+            if (columnByteWriters == null)
             {
-                columnByteWriters[i] = CreateByteWriterDelegate(Columns[i]);
+                columnByteWriters = new ByteWriterDelegate[Columns.Count];
+
+                for (int i = 0; i < columnByteWriters.Length; i++)
+                {
+                    columnByteWriters[i] = CreateByteWriterDelegate(Columns[i]);
+                }
+            }
+        }
+
+        private void InitializeColumnByteWriters(Type structType)
+        {
+            if (columnByteWriters == null)
+            {
+                columnByteWriters = new ByteWriterDelegate[Columns.Count];
+
+                for (int i = 0; i < columnByteWriters.Length; i++)
+                {
+                    columnByteWriters[i] = CreateStructWriterDelegate(structType, Columns[i]);
+                }
             }
         }
 
@@ -280,6 +340,7 @@ namespace Jhu.SharpFitsIO
         public void WriteNextRow(object[] values)
         {
             CreateStrideBuffer();
+            InitializeColumnByteWriters();
 
             int startIndex = 0;
             for (int i = 0; i < Columns.Count; i++)
@@ -289,6 +350,28 @@ namespace Jhu.SharpFitsIO
                     StrideBuffer,
                     startIndex,
                     values[i],
+                    Columns[i]);
+
+                startIndex += res;
+            }
+
+            WriteStride();
+        }
+
+        public void WriteNextRow<T>(T values)
+            where T : struct
+        {
+            CreateStrideBuffer();
+            InitializeColumnByteWriters(typeof(T));
+
+            int startIndex = 0;
+            for (int i = 0; i < Columns.Count; i++)
+            {
+                var res = columnByteWriters[i](
+                    Fits.BitConverter,
+                    StrideBuffer,
+                    startIndex,
+                    values,
                     Columns[i]);
 
                 startIndex += res;
@@ -617,7 +700,7 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         /// <param name="column"></param>
         /// <returns></returns>
-        private ByteWriterDelegate CreateByteWriterDelegate(FitsTableColumn column)
+        private ByteWriterDelegate CreateByteWriterDelegate(FitsTableColumn column, ParameterExpression value, Expression unbox)
         {
             // The generated code is approximately the following:
 
@@ -634,7 +717,6 @@ namespace Jhu.SharpFitsIO
             var converter = Expression.Parameter(typeof(BitConverterBase), "converter");
             var bytes = Expression.Parameter(typeof(byte[]), "bytes");
             var startIndex = Expression.Parameter(typeof(int), "startIndex");
-            var value = Expression.Parameter(typeof(object), "value");
             var col = Expression.Parameter(typeof(FitsTableColumn), "column");
 
             var getBytesMethod = typeof(BitConverterBase).GetMethod(
@@ -644,8 +726,6 @@ namespace Jhu.SharpFitsIO
                     typeof(byte[]),
                     typeof(int)
                 });
-
-            var unbox = Expression.Unbox(value, column.DataType.Type);
 
             var fc = Expression.Call(
                 converter,
@@ -669,6 +749,23 @@ namespace Jhu.SharpFitsIO
             var fn = lambda.Compile();
 
             return (ByteWriterDelegate)fn;
+        }
+
+        private ByteWriterDelegate CreateByteWriterDelegate(FitsTableColumn column)
+        {
+            var value = Expression.Parameter(typeof(object), "value");
+            var unbox = Expression.Unbox(value, column.DataType.Type);
+
+            return CreateByteWriterDelegate(column, value, unbox);
+        }
+
+        private ByteWriterDelegate CreateStructWriterDelegate(Type structType, FitsTableColumn column)
+        {
+            var value = Expression.Parameter(typeof(object), "value");
+            var unbox = Expression.Unbox(value, structType);
+            var field = Expression.Field(unbox, column.Name);
+
+            return CreateByteWriterDelegate(column, value, field);
         }
     }
 }

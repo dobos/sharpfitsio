@@ -10,6 +10,7 @@ namespace Jhu.SharpFitsIO
         public const string FitsKeywordSimple = "SIMPLE";
         public const string FitsKeywordExtend = "EXTEND";
         public const string FitsKeywordXtension = "XTENSION";
+        public const string FitsKeywordExtName = "EXTNAME";
         public const string FitsKeywordBitPix = "BITPIX";
         public const string FitsKeywordNAxis = "NAXIS";
         public const string FitsKeywordTFields = "TFIELDS";

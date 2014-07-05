@@ -9,5 +9,11 @@ namespace Jhu.SharpFitsIO
     {
         public Single A;
         public Single B;
+
+        public SingleComplex(Single a, Single b)
+        {
+            A = a;
+            B = b;
+        }
     }
 }

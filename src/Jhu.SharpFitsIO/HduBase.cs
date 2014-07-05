@@ -182,6 +182,31 @@ namespace Jhu.SharpFitsIO
         }
 
         [IgnoreDataMember]
+        public string ExtensionName
+        {
+            get
+            {
+                Card card;
+                if (cards.TryGet(Constants.FitsKeywordExtName, out card))
+                {
+                    return card.GetString().Trim();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            set
+            {
+                EnsureModifiable();
+
+                var card = new Card(Constants.FitsKeywordExtName);
+                card.SetValue(value);
+                cards.Set(card);
+            }
+        }
+
+        [IgnoreDataMember]
         public int AxisCount
         {
             get
@@ -191,7 +216,10 @@ namespace Jhu.SharpFitsIO
             set
             {
                 EnsureModifiable();
-                cards[Constants.FitsKeywordNAxis].SetValue(value);
+
+                var card = new Card(Constants.FitsKeywordNAxis);
+                card.SetValue(value);
+                cards.Set(card);
             }
         }
 
@@ -235,6 +263,14 @@ namespace Jhu.SharpFitsIO
             {
                 return cards[Constants.FitsKeywordBitPix].GetInt32();
             }
+            set
+            {
+                EnsureModifiable();
+
+                var card = new Card(Constants.FitsKeywordBitPix);
+                card.SetValue(value);
+                cards.Set(card);
+            }
         }
 
         /// <summary>
@@ -266,14 +302,9 @@ namespace Jhu.SharpFitsIO
             {
                 EnsureModifiable();
 
-                Card card;
-                if (!cards.TryGet(Constants.FitsKeywordXtension, out card))
-                {
-                    card = new Card(Constants.FitsKeywordXtension);
-                    cards.Add(card);
-                }
-
+                var card = new Card(Constants.FitsKeywordExtend);
                 card.SetValue(value);
+                cards.Set(card);
             }
         }
 
@@ -347,7 +378,7 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
-        private void EnsureModifiable()
+        protected void EnsureModifiable()
         {
             if (state != ObjectState.Start)
             {
@@ -378,13 +409,12 @@ namespace Jhu.SharpFitsIO
             }
 
             // Mandatory for all HDUs
-            cards.Add(new Card(Constants.FitsKeywordNAxis, "0", "number of array dimensions"));
-            cards.Add(new Card(Constants.FitsKeywordBitPix, "8", "array data type"));
+            BitsPerPixel = 8;
+            AxisCount = 0;
 
-            // Primary HDUs may have this keyword if there are additional HDUs
             if (hasExtension)
             {
-                cards.Add(new Card(Constants.FitsKeywordExtend, "F", "has extensions"));
+                HasExtension = hasExtension;
             }
 
             cards.Add(new Card(Constants.FitsKeywordEnd));
@@ -404,7 +434,18 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         protected virtual void SortCards()
         {
-            // TODO: add more constraints
+            // TODO: add more constraints:
+
+            // simple / xtension
+            // bitpix must be second
+            // naxis
+            // naxis1..N
+            // pcount
+            // gcount
+            // tfields
+            // t....
+            // ...
+            // all the rest
 
             // Move END to the very end
             for (int i = 0; i < cards.Count - 1; i++)
@@ -519,7 +560,7 @@ namespace Jhu.SharpFitsIO
         {
             int total = 1;
 
-            for (int i = 0; i < AxisCount - 1; i++)
+            for (int i = 1; i < AxisCount - 1; i++)
             {
                 total *= GetAxisLength(i + 1);
             }

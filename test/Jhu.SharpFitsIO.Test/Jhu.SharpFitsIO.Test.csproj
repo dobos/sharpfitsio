@@ -9,7 +9,7 @@
     <ProjectGuid>{68566FE0-6428-4FEF-B6EE-CC56B1FFA82A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Jhu.SharpFitsIO.Test</RootNamespace>
+    <RootNamespace>Jhu.SharpFitsIO</RootNamespace>
     <AssemblyName>Jhu.SharpFitsIO.Test</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -57,6 +57,7 @@
     <Compile Include="BinaryTableHduTest.cs" />
     <Compile Include="CardCollectionTest.cs" />
     <Compile Include="FitsTest.cs" />
+    <Compile Include="FitsTestBase.cs" />
     <Compile Include="HduBaseTest.cs" />
     <Compile Include="ImageHduTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

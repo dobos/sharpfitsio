@@ -225,7 +225,7 @@ namespace Jhu.SharpFitsIO
         }
 
         public FitsFile(string path, FitsFileMode fileMode)
-            : this(path, fileMode, Endianness.LittleEndian)
+            : this(path, fileMode, Endianness.BigEndian)
         {
             // Overload
         }
@@ -239,7 +239,7 @@ namespace Jhu.SharpFitsIO
         }
 
         public FitsFile(Stream stream, FitsFileMode fileMode)
-            : this(stream, fileMode, Endianness.LittleEndian)
+            : this(stream, fileMode, Endianness.BigEndian)
         {
             // Overload
         }
@@ -254,7 +254,7 @@ namespace Jhu.SharpFitsIO
             this.fileMode = FitsFileMode.Unknown;
             this.path = null;
 
-            this.endianness = Endianness.LittleEndian;
+            this.endianness = Endianness.BigEndian;
             this.bitConverter = null;
 
             this.hdus = new List<HduBase>();

@@ -411,7 +411,8 @@ namespace Jhu.SharpFitsIO
 
         public int GetBytes(Char value, byte[] bytes, int startIndex)
         {
-            throw new NotImplementedException();
+            bytes[startIndex] = (byte)value;
+            return sizeof(byte);
         }
 
         unsafe public int GetBytes(Int16 value, byte[] bytes, int startIndex)
