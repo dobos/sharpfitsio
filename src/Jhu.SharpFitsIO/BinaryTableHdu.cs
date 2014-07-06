@@ -391,7 +391,7 @@ namespace Jhu.SharpFitsIO
             return false;
         }
 
-        public void WriteNextRow(object[] values)
+        public void WriteNextRow(params object[] values)
         {
             if (StrideBuffer == null)
             {
@@ -770,7 +770,17 @@ namespace Jhu.SharpFitsIO
         private BinaryWriterDelegate CreateByteWriterDelegate(FitsTableColumn column)
         {
             var value = Expression.Parameter(typeof(object), "value");
-            var unboxed = Expression.Unbox(value, column.DataType.Type);
+
+            Expression unboxed;
+
+            if (column.DataType.Repeat == 1)
+            {
+                unboxed = Expression.Unbox(value, column.DataType.Type);
+            }
+            else
+            {
+                unboxed = Expression.Convert(value, column.DataType.Type.MakeArrayType());
+            }
 
             return CreateByteWriterDelegate(column, value, unboxed);
         }

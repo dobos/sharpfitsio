@@ -73,6 +73,54 @@ namespace Jhu.SharpFitsIO
             tab.WriteNextRow(new ScalarsOnlyStruct(3));
         }
 
+        [TestMethod]
+        public void TestColumns_ScalarOnly()
+        {
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            var cols = new FitsTableColumn[]
+            {
+                FitsTableColumn.Create("col0", FitsDataTypes.Logical),
+                FitsTableColumn.Create("col1", FitsDataTypes.Byte),
+                FitsTableColumn.Create("col2", FitsDataTypes.Int16),
+                FitsTableColumn.Create("col3", FitsDataTypes.Int32),
+                FitsTableColumn.Create("col4", FitsDataTypes.Int64),
+                FitsTableColumn.Create("col5", FitsDataTypes.Char),
+                FitsTableColumn.Create("col6", FitsDataTypes.Single),
+                FitsTableColumn.Create("col7", FitsDataTypes.Double),
+                FitsTableColumn.Create("col8", FitsDataTypes.SingleComplex),
+                FitsTableColumn.Create("col9", FitsDataTypes.DoubleComplex),
+            };
+
+            tab.CreateColumns(cols);
+            tab.RowCount = 3;
+
+            Assert.AreEqual(10, tab.Columns.Count);
+            Assert.AreEqual(53, tab.GetAxisLength(1));
+            Assert.AreEqual(3, tab.GetAxisLength(2));
+
+            tab.WriteHeader();
+
+            // Now try to write some data
+            for (int init = 1; init <= 3; init++)
+            {
+                tab.WriteNextRow(
+                    true,
+                    (byte)(1 * init),
+                    (short)(2 * init),
+                    3 * init,
+                    (long)(4 * init),
+                    '5',
+                    (float)(6 * init),
+                    (double)(7 * init),
+                    new SingleComplex(8 * init, 8 * init),
+                    new DoubleComplex(9 * init, 9 * init));
+            }
+        }
+
         struct StringStruct
         {
             public Int32 data0;
@@ -103,7 +151,7 @@ namespace Jhu.SharpFitsIO
             tab.RowCount = 3;
 
             Assert.AreEqual(4, tab.Columns.Count);
-            Assert.AreEqual(10, tab.GetAxisLength(1));
+            Assert.AreEqual(13, tab.GetAxisLength(1));
             Assert.AreEqual(3, tab.GetAxisLength(2));
 
             tab.WriteHeader();
@@ -112,6 +160,36 @@ namespace Jhu.SharpFitsIO
             tab.WriteNextRow(new StringStruct(1));
             tab.WriteNextRow(new StringStruct(2));
             tab.WriteNextRow(new StringStruct(3));
+        }
+
+        [TestMethod]
+        public void TestColumns_String()
+        {
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            var cols = new FitsTableColumn[]
+            {
+                FitsTableColumn.Create("col3", FitsDataTypes.Int32),
+                FitsTableColumn.Create("col5", FitsDataTypes.Char),
+                FitsTableColumn.Create("col6", FitsDataType.Create(typeof(char), 3)),
+            };
+
+            tab.CreateColumns(cols);
+            tab.RowCount = 3;
+
+            Assert.AreEqual(3, tab.Columns.Count);
+            Assert.AreEqual(8, tab.GetAxisLength(1));
+            Assert.AreEqual(3, tab.GetAxisLength(2));
+
+            tab.WriteHeader();
+
+            // Now try to write some data
+            tab.WriteNextRow(1, 'A', "ABC".ToCharArray());
+            tab.WriteNextRow(2, 'X', "QWE".ToCharArray());
+            tab.WriteNextRow(3, 'Y', "ASD".ToCharArray());
         }
 
         struct ArraysStruct
@@ -183,6 +261,64 @@ namespace Jhu.SharpFitsIO
             tab.WriteNextRow(new ArraysStruct(1));
             tab.WriteNextRow(new ArraysStruct(2));
             tab.WriteNextRow(new ArraysStruct(3));
+        }
+
+        [TestMethod]
+        public void TestColumns_Arrays()
+        {
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            var cols = new FitsTableColumn[]
+            {
+                FitsTableColumn.Create("col0", FitsDataType.Create(typeof(bool), 2)),
+                FitsTableColumn.Create("col1", FitsDataType.Create(typeof(byte), 3)),
+                FitsTableColumn.Create("col2", FitsDataType.Create(typeof(short), 3)),
+                FitsTableColumn.Create("col3", FitsDataType.Create(typeof(int), 3)),
+                FitsTableColumn.Create("col4", FitsDataType.Create(typeof(long), 3)),
+                FitsTableColumn.Create("col5", FitsDataType.Create(typeof(char), 3)),
+                FitsTableColumn.Create("col6", FitsDataType.Create(typeof(float), 3)),
+                FitsTableColumn.Create("col7", FitsDataType.Create(typeof(double), 3)),
+                FitsTableColumn.Create("col8", FitsDataType.Create(typeof(SingleComplex), 3)),
+                FitsTableColumn.Create("col9", FitsDataType.Create(typeof(DoubleComplex), 3)),
+            };
+
+            tab.CreateColumns(cols);
+            tab.RowCount = 3;
+
+            Assert.AreEqual(10, tab.Columns.Count);
+            Assert.AreEqual(158, tab.GetAxisLength(1));
+            Assert.AreEqual(3, tab.GetAxisLength(2));
+
+            tab.WriteHeader();
+
+            // Now try to write some data
+            for (int init = 1; init <= 3; init++)
+            {
+                tab.WriteNextRow(
+                    new bool[] { true, false },
+                new byte[] { (byte)init, (byte)(2 * init), (byte)(3 * init) },
+                new short[] { (short)init, (short)(2 * init), (short)(3 * init) },
+                new int[] { 3 * init, 4 * init, 5 * init },
+                new long[] { 4 * init, 5 * init, 6 * init },
+                "789".ToCharArray(),
+                new float[] { 6 * init, 7 * init, 8 * init },
+                new double[] { 7 * init, 8 * init, 9 * init },
+                new SingleComplex[] 
+                {
+                    new SingleComplex(8 * init, 8 * init),
+                    new SingleComplex(9 * init, 10 * init),
+                    new SingleComplex(11 * init, 12 * init)
+                },
+                new DoubleComplex[] 
+                {
+                    new DoubleComplex(9 * init, 10 * init),
+                    new DoubleComplex(11 * init, 12 * init),
+                    new DoubleComplex(13 * init, 14 * init)
+                });
+            }
         }
     }
 }
