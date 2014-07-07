@@ -38,6 +38,24 @@ namespace Jhu.SharpFitsIO
             return count;
         }
 
+        unsafe public int GetBytes(Boolean value, byte[] bytes, int startIndex)
+        {
+            bytes[startIndex] = value ? (Byte)0x01 : (Byte)0x00;
+            return sizeof(Byte);
+        }
+
+        unsafe public int GetBytes(Boolean[] value, byte[] bytes, int startIndex, int count)
+        {
+            int offset = 0;
+            for (int i = 0; i < count; i++)
+            {
+                bytes[startIndex + offset] = value[i] ? (Byte)0x01 : (Byte)0x00;
+                offset += sizeof(Byte);
+            }
+
+            return offset;
+        }
+
         #endregion
         #region Byte
 
@@ -59,6 +77,19 @@ namespace Jhu.SharpFitsIO
             Array.Copy(bytes, startIndex, values, 0, count);
 
             return count;
+        }
+
+        unsafe public int GetBytes(Byte value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Byte));
+        }
+
+        unsafe public int GetBytes(Byte[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (byte* vp = value)
+            {
+                return GetBytes(vp, bytes, startIndex, count);
+            }
         }
 
         #endregion
@@ -89,6 +120,19 @@ namespace Jhu.SharpFitsIO
             return count;
         }
 
+        unsafe public int GetBytes(SByte value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SByte));
+        }
+
+        unsafe public int GetBytes(SByte[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (SByte* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region Char
 
@@ -107,6 +151,58 @@ namespace Jhu.SharpFitsIO
         {
             values = ASCIIEncoding.ASCII.GetChars(bytes, startIndex, count);
             return count;
+        }
+
+        public int GetBytes(Char value, byte[] bytes, int startIndex)
+        {
+            bytes[startIndex] = (byte)value;
+            return sizeof(byte);
+        }
+
+        public int GetBytes(Char[] value, byte[] bytes, int startIndex, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                bytes[startIndex] = (byte)value[i];
+                startIndex++;
+            }
+            return sizeof(byte) * count;
+        }
+
+        #endregion
+        #region String
+
+        public String ToString(byte[] bytes, int startIndex)
+        {
+            return ASCIIEncoding.ASCII.GetString(bytes, startIndex, 1);
+        }
+
+        public int ToString(byte[] bytes, int startIndex, out String value)
+        {
+            value = ToString(bytes, startIndex);
+            return 1;
+        }
+
+        public int ToString(byte[] bytes, int startIndex, int count, out String value)
+        {
+            value = ASCIIEncoding.ASCII.GetString(bytes, startIndex, count);
+            return count;
+        }
+
+        public int GetBytes(String value, byte[] bytes, int startIndex)
+        {
+            bytes[startIndex] = (byte)value[0];
+            return sizeof(byte);
+        }
+
+        public int GetBytes(String value, byte[] bytes, int startIndex, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                bytes[startIndex] = (byte)value[i];
+                startIndex++;
+            }
+            return sizeof(byte) * count;
         }
 
         #endregion
@@ -137,6 +233,19 @@ namespace Jhu.SharpFitsIO
             return count * 2;
         }
 
+        unsafe public int GetBytes(Int16 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int16));
+        }
+
+        unsafe public int GetBytes(Int16[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (Int16* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region UInt16
 
@@ -163,6 +272,19 @@ namespace Jhu.SharpFitsIO
             }
 
             return count * 2;
+        }
+
+        unsafe public int GetBytes(UInt16 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt16));
+        }
+
+        unsafe public int GetBytes(UInt16[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (UInt16* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
         }
 
         #endregion
@@ -193,6 +315,19 @@ namespace Jhu.SharpFitsIO
             return count * 4;
         }
 
+        unsafe public int GetBytes(Int32 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int32));
+        }
+
+        unsafe public int GetBytes(Int32[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (Int32* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region UInt32
 
@@ -219,6 +354,19 @@ namespace Jhu.SharpFitsIO
             }
 
             return count * 4;
+        }
+
+        unsafe public int GetBytes(UInt32 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt32));
+        }
+
+        unsafe public int GetBytes(UInt32[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (UInt32* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
         }
 
         #endregion
@@ -249,6 +397,19 @@ namespace Jhu.SharpFitsIO
             return count * 8;
         }
 
+        unsafe public int GetBytes(Int64 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int64));
+        }
+
+        unsafe public int GetBytes(Int64[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (Int64* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region UInt64
 
@@ -275,6 +436,19 @@ namespace Jhu.SharpFitsIO
             }
 
             return count * 8;
+        }
+
+        unsafe public int GetBytes(UInt64 value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt64));
+        }
+
+        unsafe public int GetBytes(UInt64[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (UInt64* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
         }
 
         #endregion
@@ -305,6 +479,19 @@ namespace Jhu.SharpFitsIO
             return count * 4;
         }
 
+        unsafe public int GetBytes(Single value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Single));
+        }
+
+        unsafe public int GetBytes(Single[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (Single* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region Double
 
@@ -331,6 +518,19 @@ namespace Jhu.SharpFitsIO
             }
 
             return count * 8;
+        }
+
+        unsafe public int GetBytes(Double value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Double));
+        }
+
+        unsafe public int GetBytes(Double[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (Double* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
         }
 
         #endregion
@@ -361,6 +561,19 @@ namespace Jhu.SharpFitsIO
             return count * 8;
         }
 
+        unsafe public int GetBytes(SingleComplex value, byte[] bytes, int startIndex)
+        {
+            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SingleComplex));
+        }
+
+        unsafe public int GetBytes(SingleComplex[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (SingleComplex* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
         #endregion
         #region DoubleComplex
 
@@ -389,80 +602,19 @@ namespace Jhu.SharpFitsIO
             return count * 16;
         }
 
-        #endregion
-
-        // ---
-
-        unsafe public int GetBytes(Boolean value, byte[] bytes, int startIndex)
-        {
-            bytes[startIndex] = value ? (Byte)0x01 : (Byte)0x00;
-            return sizeof(Byte);
-        }
-
-        unsafe public int GetBytes(Byte value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Byte));
-        }
-
-        unsafe public int GetBytes(SByte value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SByte));
-        }
-
-        public int GetBytes(Char value, byte[] bytes, int startIndex)
-        {
-            bytes[startIndex] = (byte)value;
-            return sizeof(byte);
-        }
-
-        unsafe public int GetBytes(Int16 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int16));
-        }
-
-        unsafe public int GetBytes(UInt16 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt16));
-        }
-
-        unsafe public int GetBytes(Int32 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int32));
-        }
-
-        unsafe public int GetBytes(UInt32 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt32));
-        }
-
-        unsafe public int GetBytes(Int64 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Int64));
-        }
-
-        unsafe public int GetBytes(UInt64 value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(UInt64));
-        }
-
-        unsafe public int GetBytes(Single value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Single));
-        }
-
-        unsafe public int GetBytes(Double value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(Double));
-        }
-
-        unsafe public int GetBytes(SingleComplex value, byte[] bytes, int startIndex)
-        {
-            return GetBytes((byte*)&value, bytes, startIndex, sizeof(SingleComplex));
-        }
-
         unsafe public int GetBytes(DoubleComplex value, byte[] bytes, int startIndex)
         {
             return GetBytes((byte*)&value, bytes, startIndex, sizeof(DoubleComplex));
         }
+
+        unsafe public int GetBytes(DoubleComplex[] value, byte[] bytes, int startIndex, int count)
+        {
+            fixed (DoubleComplex* vp = value)
+            {
+                return GetBytes((byte*)vp, bytes, startIndex, count);
+            }
+        }
+
+        #endregion
     }
 }

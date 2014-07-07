@@ -48,6 +48,14 @@ namespace Jhu.SharpFitsIO
                 data8 = new SingleComplex(8 * init, 8 * init);
                 data9 = new DoubleComplex(9 * init, 9 * init);
             }
+
+            public object[] GetValues()
+            {
+                return new object[]
+                {
+                    data0, data1, data2, data3, data4, data5, data6, data7, data8, data9
+                };
+            }
         }
 
         [TestMethod]
@@ -68,9 +76,9 @@ namespace Jhu.SharpFitsIO
             tab.WriteHeader();
 
             // Now try to write some data
-            tab.WriteNextRow(new ScalarsOnlyStruct(1));
-            tab.WriteNextRow(new ScalarsOnlyStruct(2));
-            tab.WriteNextRow(new ScalarsOnlyStruct(3));
+            tab.WriteNextRow(new ScalarsOnlyStruct(1).GetValues());
+            tab.WriteNextRow(new ScalarsOnlyStruct(2).GetValues());
+            tab.WriteNextRow(new ScalarsOnlyStruct(3).GetValues());
         }
 
         [TestMethod]
@@ -137,6 +145,14 @@ namespace Jhu.SharpFitsIO
                 data2 = new char[] { (char)('C' + init), (char)('D' + init), (char)('E' + init) };
                 data3 = new String((char)('F' + init), 5);
             }
+
+            public object[] GetValues()
+            {
+                return new object[]
+                {
+                    data0, data1, data2, data3
+                };
+            }
         }
 
         [TestMethod]
@@ -157,9 +173,9 @@ namespace Jhu.SharpFitsIO
             tab.WriteHeader();
 
             // Now try to write some data
-            tab.WriteNextRow(new StringStruct(1));
-            tab.WriteNextRow(new StringStruct(2));
-            tab.WriteNextRow(new StringStruct(3));
+            tab.WriteNextRow(new StringStruct(1).GetValues());
+            tab.WriteNextRow(new StringStruct(2).GetValues());
+            tab.WriteNextRow(new StringStruct(3).GetValues());
         }
 
         [TestMethod]
@@ -238,6 +254,14 @@ namespace Jhu.SharpFitsIO
                     new DoubleComplex(13 * init, 14 * init)
                 };
             }
+
+            public object[] GetValues()
+            {
+                return new object[]
+                {
+                    data0, data1, data2, data3, data4, data5, data6, data7, data8, data9
+                };
+            }
         }
 
         [TestMethod]
@@ -258,9 +282,9 @@ namespace Jhu.SharpFitsIO
             tab.WriteHeader();
 
             // Now try to write some data
-            tab.WriteNextRow(new ArraysStruct(1));
-            tab.WriteNextRow(new ArraysStruct(2));
-            tab.WriteNextRow(new ArraysStruct(3));
+            tab.WriteNextRow(new ArraysStruct(1).GetValues());
+            tab.WriteNextRow(new ArraysStruct(2).GetValues());
+            tab.WriteNextRow(new ArraysStruct(3).GetValues());
         }
 
         [TestMethod]
