@@ -39,7 +39,13 @@ namespace Jhu.SharpFitsIO
         [TestMethod]
         public void ToCharTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+
+            Assert.AreEqual(0, bc.ToChar(new byte[] { 0 }, 0));
+            Assert.AreEqual(1, bc.ToChar(new byte[] { 1 }, 0));
+            Assert.AreEqual(127, bc.ToChar(new byte[] { 127 }, 0));
+            Assert.AreEqual(128, bc.ToChar(new byte[] { 128 }, 0));
+            Assert.AreEqual(255, bc.ToChar(new byte[] { 255 }, 0));
         }
 
         [TestMethod]
@@ -131,13 +137,19 @@ namespace Jhu.SharpFitsIO
         [TestMethod]
         public void ToSingleComplexTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+
+            Assert.AreEqual(new SingleComplex(1.0f, 1.0f), bc.ToSingleComplex(new byte[] { 63, 128, 0, 0, 63, 128, 0, 0 }, 0));
+            Assert.AreEqual(new SingleComplex(-1.0f, -1.0f), bc.ToSingleComplex(new byte[] { 191, 128, 0, 0, 191, 128, 0, 0 }, 0));
         }
 
         [TestMethod]
         public void ToDoubleComplexTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+
+            Assert.AreEqual(new DoubleComplex(1.0, 1.0), bc.ToDoubleComplex(new byte[] { 63, 240, 0, 0, 0, 0, 0, 0, 63, 240, 0, 0, 0, 0, 0, 0 }, 0));
+            Assert.AreEqual(new DoubleComplex(-1.0, -1.0), bc.ToDoubleComplex(new byte[] { 191, 240, 0, 0, 0, 0, 0, 0, 191, 240, 0, 0, 0, 0, 0, 0 }, 0));
         }
 
         [TestMethod]
@@ -156,13 +168,27 @@ namespace Jhu.SharpFitsIO
         [TestMethod]
         public void GetBytesFromSByteTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+            var bytes = new byte[1];
+
+            bc.GetBytes((SByte)(1), bytes, 0);
+            Assert.AreEqual("01", ByteArrayToString(bytes));
+
+            bc.GetBytes((SByte)(-1), bytes, 0);
+            Assert.AreEqual("FF", ByteArrayToString(bytes));
         }
 
         [TestMethod]
         public void GetBytesFromCharTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+            var bytes = new byte[1];
+
+            bc.GetBytes('0', bytes, 0);
+            Assert.AreEqual("30", ByteArrayToString(bytes));
+
+            bc.GetBytes('\xFF', bytes, 0);
+            Assert.AreEqual("FF", ByteArrayToString(bytes));
         }
 
         [TestMethod]
@@ -317,13 +343,27 @@ namespace Jhu.SharpFitsIO
         [TestMethod]
         public void GetBytesFromSingleComplexTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+            var bytes = new byte[8];
+
+            bc.GetBytes(new SingleComplex(3, 5), bytes, 0);
+            Assert.AreEqual("40-A0-00-00-40-40-00-00", ByteArrayToString(bytes));
+
+            bc.GetBytes(new SingleComplex(-3, -5), bytes, 0);
+            Assert.AreEqual("C0-A0-00-00-C0-40-00-00", ByteArrayToString(bytes));
         }
 
         [TestMethod]
         public void GetBytesFromDoubleComplexTest()
         {
-            Assert.Inconclusive();
+            var bc = new SwapBitConverter();
+            var bytes = new byte[16];
+
+            bc.GetBytes(new DoubleComplex(3, 5), bytes, 0);
+            Assert.AreEqual("40-14-00-00-00-00-00-00-40-08-00-00-00-00-00-00", ByteArrayToString(bytes));
+
+            bc.GetBytes(new DoubleComplex(-3, -5), bytes, 0);
+            Assert.AreEqual("C0-14-00-00-00-00-00-00-C0-08-00-00-00-00-00-00", ByteArrayToString(bytes));
         }
     }
 }
