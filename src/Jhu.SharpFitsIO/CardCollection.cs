@@ -125,19 +125,11 @@ namespace Jhu.SharpFitsIO
         private void CopyMembers(CardCollection old)
         {
             this.hdu = old.hdu;
-            this.cardList = new List<Card>();
-            this.cardDictionary = new Dictionary<string, Card>(FitsFile.Comparer);
 
-            foreach (var card in old.cardList)
-            {
-                var ncard = (Card)card.Clone();
-
-                this.cardList.Add(ncard);
-                if (!ncard.IsComment)
-                {
-                    this.cardDictionary.Add(ncard.Keyword, ncard);
-                }
-            }
+            // Because cardDictionary doesn't contain all cards (comments, etc. are missing)
+            // copy the two collections independently
+            this.cardList = new List<Card>(old.cardList);
+            this.cardDictionary = new Dictionary<string, Card>(old.cardDictionary, FitsFile.Comparer);
         }
 
         #endregion
@@ -161,7 +153,7 @@ namespace Jhu.SharpFitsIO
 
         internal void AddInternal(Card card)
         {
-            if (!card.IsComment)
+            if (!String.IsNullOrWhiteSpace(card.Keyword) && !card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);
             }
