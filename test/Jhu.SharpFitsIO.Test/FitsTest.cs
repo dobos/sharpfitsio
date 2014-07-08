@@ -14,7 +14,7 @@ namespace Jhu.SharpFitsIO
     {
         private FitsFile OpenFits(string filename)
         {
-            var path = String.Format(@"..\..\..\test\data\{0}", filename);
+            var path = String.Format(@"..\..\..\..\sharpfitsio\test\data\{0}", filename);
             FitsFile f;
 
             if (filename.EndsWith(".gz"))
@@ -119,6 +119,7 @@ namespace Jhu.SharpFitsIO
             SimpleHdu hdu;
             while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
+                hdu.ReadToFinish();
             }
 
             f.Close();

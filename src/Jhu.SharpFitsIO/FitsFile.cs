@@ -500,12 +500,7 @@ namespace Jhu.SharpFitsIO
                     }
                 }
 
-                // See if there's a new block in the file.
-                if (nextHdu != null)
-                {
-                    nextHdu.ReadHeader();
-                    return nextHdu;
-                }
+                return nextHdu;
 
                 // FITS files don't have footers, so nothing to do here
             }

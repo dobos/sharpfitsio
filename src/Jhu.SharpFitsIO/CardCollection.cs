@@ -156,6 +156,11 @@ namespace Jhu.SharpFitsIO
         {
             EnsureModifiable();
 
+            AddInternal(card);
+        }
+
+        internal void AddInternal(Card card)
+        {
             if (!card.IsComment)
             {
                 cardDictionary.Add(card.Keyword, card);

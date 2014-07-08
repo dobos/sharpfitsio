@@ -438,7 +438,7 @@ namespace Jhu.SharpFitsIO
         public void ReadHeader()
         {
             // Make sure file is in read more
-            if (file.FileMode != FitsFileMode.Write)
+            if (file.FileMode != FitsFileMode.Read)
             {
                 throw new InvalidOperationException();
             }
@@ -461,7 +461,7 @@ namespace Jhu.SharpFitsIO
 
                 ProcessCard(card);
 
-                cards.Add(card);
+                cards.AddInternal(card);
             }
             while (!card.IsEnd);
 
@@ -592,6 +592,9 @@ namespace Jhu.SharpFitsIO
 
                 long offset = sl * (sc - strideCounter);
                 Fits.WrappedStream.Seek(offset, SeekOrigin.Current);
+
+                strideCounter = sc;
+                state = ObjectState.Done;
             }
 
             Fits.SkipBlock();
