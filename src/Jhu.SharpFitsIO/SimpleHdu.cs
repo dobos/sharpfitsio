@@ -347,7 +347,7 @@ namespace Jhu.SharpFitsIO
         {
             this.file = old.file;
 
-            this.state = ObjectState.Start;
+            this.state = old.state;
 
             this.headerPosition = old.headerPosition;
             this.dataPosition = old.dataPosition;
@@ -355,8 +355,8 @@ namespace Jhu.SharpFitsIO
             this.cards = new CardCollection(old.cards);
 
             this.strideBuffer = null;
-            this.totalStrides = 0;
-            this.strideCounter = 0;
+            this.totalStrides = old.totalStrides;
+            this.strideCounter = old.strideCounter;
         }
 
         public virtual object Clone()
@@ -468,7 +468,8 @@ namespace Jhu.SharpFitsIO
             // Skip block
             Fits.SkipBlock();
             dataPosition = Fits.WrappedStream.Position;
-
+            
+            totalStrides = GetTotalStrides();
             state = ObjectState.Header;
         }
 
@@ -501,6 +502,7 @@ namespace Jhu.SharpFitsIO
             Fits.SkipBlock();
             dataPosition = Fits.WrappedStream.Position;
 
+            totalStrides = GetTotalStrides();
             state = ObjectState.Header;
         }
 
@@ -551,7 +553,6 @@ namespace Jhu.SharpFitsIO
         protected void CreateStrideBuffer()
         {
             strideBuffer = new byte[GetStrideLength()];
-            totalStrides = GetTotalStrides();
             strideCounter = 0;
         }
 
