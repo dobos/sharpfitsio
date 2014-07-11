@@ -43,7 +43,7 @@ namespace Jhu.SharpFitsIO
         [NonSerialized]
         private int byteSize;
 
-        private Int32? nullValue;
+        private UInt64? nullValue;
         private double? scale;
         private double? zero;
         private string dimensions;
@@ -109,7 +109,7 @@ namespace Jhu.SharpFitsIO
         /// <remarks>
         /// Corresponds to the TNULLn keyword
         /// </remarks>
-        public Int32? NullValue
+        public UInt64? NullValue
         {
             get { return nullValue; }
             set { nullValue = value; }
@@ -239,10 +239,32 @@ namespace Jhu.SharpFitsIO
             throw new NotImplementedException();
         }
 
-        public static FitsDataType Create(Type type, int repeat)
+        public static FitsDataType Create(Type type, int repeat, bool nullable)
         {
             var fdt = FitsDataType.Create(type);
+
             fdt.repeat = repeat;
+
+            if (nullable)
+            {
+                switch (fdt.byteSize)
+                {
+                    case 1:
+                        fdt.NullValue = 0x80;
+                        break;
+                    case 2:
+                        fdt.NullValue = 0x8000;
+                        break;
+                    case 4:
+                        fdt.NullValue = 0x80000000;
+                        break;
+                    case 8:
+                        fdt.NullValue = 0x8000000000000000;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
 
             return fdt;
         }

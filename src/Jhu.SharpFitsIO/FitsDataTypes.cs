@@ -16,7 +16,7 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameLogical,
                     Type = typeof(Boolean),
                     Code = 'L',
-                    ByteSize = sizeof(Byte),
+                    ByteSize = sizeof(Byte)
                 };
             }
         }
@@ -30,7 +30,7 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameBit,
                     Type = typeof(Byte),
                     Code = 'X',
-                    ByteSize = sizeof(Byte),
+                    ByteSize = sizeof(Byte)
                 };
             }
         }
@@ -44,7 +44,7 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameByte,
                     Type = typeof(Byte),
                     Code = 'B',
-                    ByteSize = sizeof(Byte),
+                    ByteSize = sizeof(Byte)
                 };
             }
         }
@@ -58,7 +58,7 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameInt16,
                     Type = typeof(Int16),
                     Code = 'I',
-                    ByteSize = sizeof(Int16),
+                    ByteSize = sizeof(Int16)
                 };
             }
         }
@@ -72,7 +72,7 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameInt32,
                     Type = typeof(Int32),
                     Code = 'J',
-                    ByteSize = sizeof(Int32),
+                    ByteSize = sizeof(Int32)
                 };
             }
         }
