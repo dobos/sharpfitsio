@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 
 namespace Jhu.SharpFitsIO
 {
+    [Serializable]
     public class FitsDataType : ICloneable
     {
         private static readonly Regex FormatRegex = new Regex(@"([0-9]*)([LXBIJKAEDCMP]+)");
@@ -43,7 +44,8 @@ namespace Jhu.SharpFitsIO
         [NonSerialized]
         private int byteSize;
 
-        private UInt64? nullValue;
+        private bool isNullable;
+        private object nullValue;
         private double? scale;
         private double? zero;
         private string dimensions;
@@ -104,12 +106,21 @@ namespace Jhu.SharpFitsIO
         }
 
         /// <summary>
+        /// Gets or sets whether the column may containg null values.
+        /// </summary>
+        public bool IsNullable
+        {
+            get { return isNullable; }
+            set { isNullable = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the value indicating null.
         /// </summary>
         /// <remarks>
         /// Corresponds to the TNULLn keyword
         /// </remarks>
-        public UInt64? NullValue
+        public object NullValue
         {
             get { return nullValue; }
             set { nullValue = value; }
@@ -167,6 +178,7 @@ namespace Jhu.SharpFitsIO
             this.type = null;
             this.repeat = 1;
             this.byteSize = 0;
+            this.isNullable = false;
             this.nullValue = null;
             this.scale = null;
             this.zero = null;
@@ -179,6 +191,7 @@ namespace Jhu.SharpFitsIO
             this.type = old.type;
             this.repeat = old.repeat;
             this.byteSize = old.byteSize;
+            this.isNullable = old.isNullable;
             this.nullValue = old.nullValue;
             this.scale = old.scale;
             this.zero = old.zero;
@@ -195,78 +208,67 @@ namespace Jhu.SharpFitsIO
 
         public static FitsDataType Create(Type type)
         {
-            if (type == typeof(Boolean))
-            {
-                return FitsDataTypes.Logical;
-            }
-            else if (type == typeof(Byte))
-            {
-                return FitsDataTypes.Byte;
-            }
-            else if (type == typeof(Int16))
-            {
-                return FitsDataTypes.Int16;
-            }
-            else if (type == typeof(Int32))
-            {
-                return FitsDataTypes.Int32;
-            }
-            else if (type == typeof(Int64))
-            {
-                return FitsDataTypes.Int64;
-            }
-            else if (type == typeof(Char))
-            {
-                return FitsDataTypes.Char;
-            }
-            else if (type == typeof(Single))
-            {
-                return FitsDataTypes.Single;
-            }
-            else if (type == typeof(Double))
-            {
-                return FitsDataTypes.Double;
-            }
-            else if (type == typeof(SingleComplex))
-            {
-                return FitsDataTypes.SingleComplex;
-            }
-            else if (type == typeof(DoubleComplex))
-            {
-                return FitsDataTypes.DoubleComplex;
-            }
+            return Create(type, 1, false);
+        }
 
-            throw new NotImplementedException();
+        public static FitsDataType Create(Type type, int repeat)
+        {
+            return Create(type, repeat, false);
         }
 
         public static FitsDataType Create(Type type, int repeat, bool nullable)
         {
-            var fdt = FitsDataType.Create(type);
+            FitsDataType dt;
 
-            fdt.repeat = repeat;
-
-            if (nullable)
+            if (type == typeof(Boolean))
             {
-                switch (fdt.byteSize)
-                {
-                    case 1:
-                        fdt.NullValue = 0x80;
-                        break;
-                    case 2:
-                        fdt.NullValue = 0x8000;
-                        break;
-                    case 4:
-                        fdt.NullValue = 0x80000000;
-                        break;
-                    case 8:
-                        fdt.NullValue = 0x8000000000000000;
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
+                dt = FitsDataTypes.Logical;
+            }
+            else if (type == typeof(Byte))
+            {
+                dt =  FitsDataTypes.Byte;
+            }
+            else if (type == typeof(Int16))
+            {
+                dt =  FitsDataTypes.Int16;
+            }
+            else if (type == typeof(Int32))
+            {
+                dt =  FitsDataTypes.Int32;
+            }
+            else if (type == typeof(Int64))
+            {
+                dt =  FitsDataTypes.Int64;
+            }
+            else if (type == typeof(Char))
+            {
+                dt =  FitsDataTypes.Char;
+            }
+            else if (type == typeof(Single))
+            {
+                dt =  FitsDataTypes.Single;
+            }
+            else if (type == typeof(Double))
+            {
+                dt =  FitsDataTypes.Double;
+            }
+            else if (type == typeof(SingleComplex))
+            {
+                dt =  FitsDataTypes.SingleComplex;
+            }
+            else if (type == typeof(DoubleComplex))
+            {
+                dt =  FitsDataTypes.DoubleComplex;
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
-            return fdt;
+            dt.repeat = repeat;
+            dt.IsNullable = nullable;
+
+            return dt;
         }
 
         #endregion

@@ -176,7 +176,7 @@ namespace Jhu.SharpFitsIO
             // Null value equivalent
             if (hdu.Cards.TryGet(Constants.FitsKeywordTNull, index, out card))
             {
-                column.DataType.NullValue = card.GetInt32();
+                column.DataType.NullValue = card.GetValue(column.DataType.Type);
             }
 
             // Scale
@@ -229,10 +229,10 @@ namespace Jhu.SharpFitsIO
             }
 
             // TNULLn
-            if (dataType.NullValue.HasValue)
+            if (dataType.IsNullable)
             {
                 card = new Card(Constants.FitsKeywordTNull, this.id);
-                card.SetValue(dataType.NullValue.Value);
+                card.SetValue(dataType.NullValue);
                 hdu.Cards.Set(card);
             }
 

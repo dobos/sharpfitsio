@@ -345,7 +345,7 @@ namespace Jhu.SharpFitsIO
 
                     columns[i] = FitsTableColumn.Create(
                         fields[i].Name,
-                        FitsDataType.Create(type, repeat));
+                        FitsDataType.Create(type, repeat, false));
                 }
                 else
                 {
@@ -469,12 +469,24 @@ namespace Jhu.SharpFitsIO
             int startIndex = 0;
             for (int i = 0; i < Columns.Count; i++)
             {
+                object v;
+
+                // TODO: what to do with arrays?
+                if (Columns[i].DataType.IsNullable && (values[i] == null || values[i] == DBNull.Value))
+                {
+                    v = Columns[i].DataType.NullValue;
+                }
+                else
+                {
+                    v = values[i];
+                }
+
                 var res = columnByteWriters[i](
                     Fits.BitConverter,
                     Columns[i],
                     StrideBuffer,
                     startIndex,
-                    values[i]);
+                    v);
 
                 startIndex += res;
             }
@@ -816,7 +828,18 @@ namespace Jhu.SharpFitsIO
             {
                 return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
                 {
-                    Encoding.ASCII.GetBytes((string)value, 0, col.DataType.Repeat, bytes, startIndex);
+                    if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
+                    {
+                        for (int i = 0; i < col.DataType.Repeat; i++)
+                        {
+                            bytes[startIndex + i] = 0;
+                        }
+                    }
+                    else
+                    {
+                        Encoding.ASCII.GetBytes((string)value, 0, col.DataType.Repeat, bytes, startIndex);
+                    }
+
                     return col.DataType.Repeat;
                 };
             }
@@ -827,7 +850,14 @@ namespace Jhu.SharpFitsIO
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
                     {
-                        return converter.GetBytes((Boolean)value, bytes, startIndex);
+                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
+                        {
+                            return converter.GetBytes((Byte)col.DataType.NullValue, bytes, startIndex);
+                        }
+                        else
+                        {
+                            return converter.GetBytes((Boolean)value, bytes, startIndex);
+                        }
                     };
                 }
                 else if (column.DataType.Type == typeof(SByte))

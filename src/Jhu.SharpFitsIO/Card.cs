@@ -107,6 +107,110 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Value accessors
 
+        public object GetValue(Type type)
+        {
+            if (type == typeof(Boolean))
+            {
+                return GetBoolean();
+            }
+            else if (type == typeof(Byte))
+            {
+                return GetByte();
+            }
+            else if (type == typeof(Int16))
+            {
+                return GetInt16();
+            }
+            else if (type == typeof(Int32))
+            {
+                return GetInt32();
+            }
+            else if (type == typeof(Int64))
+            {
+                return GetInt64();
+            }
+            else if (type == typeof(Char))
+            {
+                return GetChar();
+            }
+            else if (type == typeof(String))
+            {
+                return GetString();
+            }
+            else if (type == typeof(Single))
+            {
+                return GetSingle();
+            }
+            else if (type == typeof(Double))
+            {
+                return GetDouble();
+            }
+            else if (type == typeof(SingleComplex))
+            {
+                return GetSingleComplex();
+            }
+            else if (type == typeof(DoubleComplex))
+            {
+                return GetDoubleComplex();
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public void SetValue(object value)
+        {
+            var type = value.GetType();
+
+            if (type == typeof(Boolean))
+            {
+                SetValue((Boolean)value);
+            }
+            else if (type == typeof(Byte))
+            {
+                SetValue((Byte)value);
+            }
+            else if (type == typeof(Int16))
+            {
+                SetValue((Int16)value);
+            }
+            else if (type == typeof(Int32))
+            {
+                SetValue((Int32)value);
+            }
+            else if (type == typeof(Int64))
+            {
+                SetValue((Int64)value);
+            }
+            else if (type == typeof(Char))
+            {
+                SetValue((Char)value);
+            }
+            else if (type == typeof(String))
+            {
+                SetValue((String)value);
+            }
+            else if (type == typeof(Single))
+            {
+                SetValue((Single)value);
+            }
+            else if (type == typeof(Double))
+            {
+                SetValue((Double)value);
+            }
+            else if (type == typeof(SingleComplex))
+            {
+                SetValue((SingleComplex)value); ;
+            }
+            else if (type == typeof(DoubleComplex))
+            {
+                SetValue((DoubleComplex)value);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public String GetString()
         {
             return rawValue.Trim('\'');
@@ -135,12 +239,62 @@ namespace Jhu.SharpFitsIO
             rawValue = value ? "T" : "F";
         }
 
+        public Byte GetByte()
+        {
+            return Byte.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(Byte value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public Int16 GetInt16()
+        {
+            return Int16.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(Int16 value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
+
         public Int32 GetInt32()
         {
             return Int32.Parse(rawValue, CultureInfo.InvariantCulture);
         }
 
         public void SetValue(Int32 value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public Int64 GetInt64()
+        {
+            return Int64.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(Int64 value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public Char GetChar()
+        {
+            return rawValue.Trim('\'')[0];
+        }
+
+        public void SetValue(Char value)
+        {
+            rawValue = "'" + value + "'";
+        }
+
+        public Single GetSingle()
+        {
+            return Single.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(Single value)
         {
             rawValue = value.ToString(CultureInfo.InvariantCulture);
         }
@@ -155,7 +309,25 @@ namespace Jhu.SharpFitsIO
             rawValue = value.ToString(CultureInfo.InvariantCulture);
         }
 
-        // *** TODO: implement other types of getters and setters
+        public SingleComplex GetSingleComplex()
+        {
+            return SingleComplex.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(SingleComplex value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public DoubleComplex GetDoubleComplex()
+        {
+            return DoubleComplex.Parse(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        public void SetValue(DoubleComplex value)
+        {
+            rawValue = value.ToString(CultureInfo.InvariantCulture);
+        }
 
         #endregion
         #region Read functions

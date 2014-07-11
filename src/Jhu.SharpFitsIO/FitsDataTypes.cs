@@ -16,7 +16,8 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameLogical,
                     Type = typeof(Boolean),
                     Code = 'L',
-                    ByteSize = sizeof(Byte)
+                    ByteSize = sizeof(Byte),
+                    NullValue = (Byte)0x80,
                 };
             }
         }
@@ -30,7 +31,8 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameBit,
                     Type = typeof(Byte),
                     Code = 'X',
-                    ByteSize = sizeof(Byte)
+                    ByteSize = sizeof(Byte),
+                    NullValue = (Byte)0x80,
                 };
             }
         }
@@ -44,7 +46,8 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameByte,
                     Type = typeof(Byte),
                     Code = 'B',
-                    ByteSize = sizeof(Byte)
+                    ByteSize = sizeof(Byte),
+                    NullValue = (Byte)0x80,
                 };
             }
         }
@@ -58,7 +61,8 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameInt16,
                     Type = typeof(Int16),
                     Code = 'I',
-                    ByteSize = sizeof(Int16)
+                    ByteSize = sizeof(Int16),
+                    NullValue = System.Int16.MinValue,
                 };
             }
         }
@@ -72,7 +76,8 @@ namespace Jhu.SharpFitsIO
                     Name = Constants.FitsTypeNameInt32,
                     Type = typeof(Int32),
                     Code = 'J',
-                    ByteSize = sizeof(Int32)
+                    ByteSize = sizeof(Int32),
+                    NullValue = System.Int32.MinValue,
                 };
             }
         }
@@ -87,6 +92,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Int64),
                     Code = 'K',
                     ByteSize = sizeof(Int64),
+                    NullValue = System.Int64.MinValue,
                 };
             }
         }
@@ -101,6 +107,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Char),
                     Code = 'A',
                     ByteSize = sizeof(Byte),
+                    NullValue = (Char)0x00,
                 };
             }
         }
@@ -115,6 +122,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Single),
                     Code = 'E',
                     ByteSize = sizeof(Single),
+                    NullValue = System.Single.NaN,
                 };
             }
         }
@@ -129,6 +137,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Double),
                     Code = 'D',
                     ByteSize = sizeof(Double),
+                    NullValue = System.Double.NaN,
                 };
             }
         }
@@ -143,6 +152,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(SingleComplex),
                     Code = 'C',
                     ByteSize = 2 * sizeof(Single),
+                    NullValue = SharpFitsIO.SingleComplex.NaN,
                 };
             }
         }
@@ -157,6 +167,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(DoubleComplex),
                     Code = 'M',
                     ByteSize = 2 * sizeof(Double),
+                    NullValue = SharpFitsIO.DoubleComplex.NaN,
                 };
             }
         }
