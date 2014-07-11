@@ -832,12 +832,20 @@ namespace Jhu.SharpFitsIO
                     {
                         for (int i = 0; i < col.DataType.Repeat; i++)
                         {
-                            bytes[startIndex + i] = 0;
+                            bytes[startIndex + i] = 0x00;
                         }
                     }
                     else
                     {
-                        Encoding.ASCII.GetBytes((string)value, 0, col.DataType.Repeat, bytes, startIndex);
+                        var str = (string)value;
+                        var len = Math.Min(str.Length, col.DataType.Repeat);
+                        
+                        Encoding.ASCII.GetBytes((string)value, 0, len, bytes, startIndex);
+
+                        for (int i = len; i < col.DataType.Repeat; i++)
+                        {
+                            bytes[startIndex + i] = 0x00;
+                        }
                     }
 
                     return col.DataType.Repeat;
@@ -850,6 +858,7 @@ namespace Jhu.SharpFitsIO
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
                     {
+                        // TODO: create a mapper instead of this if case here
                         if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
                         {
                             return converter.GetBytes((Byte)col.DataType.NullValue, bytes, startIndex);
@@ -874,13 +883,14 @@ namespace Jhu.SharpFitsIO
                         return converter.GetBytes((Byte)value, bytes, startIndex);
                     };
                 }
-                else if (column.DataType.Type == typeof(Char))
+                // TODO: delete, we use string
+                /*else if (column.DataType.Type == typeof(Char))
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
                     {
                         return converter.GetBytes((Char)value, bytes, startIndex);
                     };
-                }
+                }*/
                 else if (column.DataType.Type == typeof(Int16))
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
@@ -980,6 +990,7 @@ namespace Jhu.SharpFitsIO
                         return converter.GetBytes((Byte[])value, bytes, startIndex, col.DataType.Repeat);
                     };
                 }
+                    /* TODO: delete, we use string
                 else if (column.DataType.Type == typeof(Char))
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
@@ -994,6 +1005,7 @@ namespace Jhu.SharpFitsIO
                         }
                     };
                 }
+                     * */
                 else if (column.DataType.Type == typeof(Int16))
                 {
                     return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)

@@ -199,9 +199,18 @@ namespace Jhu.SharpFitsIO
         {
             for (int i = 0; i < count; i++)
             {
-                bytes[startIndex] = (byte)value[i];
+                if (i < value.Length)
+                {
+                    bytes[startIndex] = (byte)value[i];
+                }
+                else
+                {
+                    bytes[startIndex] = (byte)0x00;
+                }
+
                 startIndex++;
             }
+
             return sizeof(byte) * count;
         }
 

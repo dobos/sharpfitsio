@@ -240,7 +240,7 @@ namespace Jhu.SharpFitsIO
             {
                 dt =  FitsDataTypes.Int64;
             }
-            else if (type == typeof(Char))
+            else if (type == typeof(Char) || type == typeof(String))
             {
                 dt =  FitsDataTypes.Char;
             }

@@ -104,7 +104,7 @@ namespace Jhu.SharpFitsIO
                 return new FitsDataType()
                 {
                     Name = Constants.FitsTypeNameChar,
-                    Type = typeof(Char),
+                    Type = typeof(String),
                     Code = 'A',
                     ByteSize = sizeof(Byte),
                     NullValue = (Char)0x00,
