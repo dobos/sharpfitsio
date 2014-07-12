@@ -107,7 +107,7 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(String),
                     Code = 'A',
                     ByteSize = sizeof(Byte),
-                    NullValue = (Char)0x00,
+                    NullValue = "\x00",
                 };
             }
         }
