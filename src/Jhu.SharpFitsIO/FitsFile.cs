@@ -19,6 +19,21 @@ namespace Jhu.SharpFitsIO
         public static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 
         #endregion
+
+        internal static readonly byte[] FillZeroBuffer;
+        internal static readonly byte[] FillSpaceBuffer;
+
+        static FitsFile()
+        {
+            FillZeroBuffer = new byte[Constants.FitsBlockSize];
+            FillSpaceBuffer = new byte[Constants.FitsBlockSize];
+            for (int i = 0; i < FillSpaceBuffer.Length; i++)
+            {
+                FillZeroBuffer[i] = 0x00;
+                FillSpaceBuffer[i] = 0x20;      // ' '
+            }
+        }
+
         #region Private member variables
 
         /// <summary>
@@ -573,24 +588,25 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        internal void SkipBlock()
+        {
+            var offset = (int)(2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position);
+            if (offset > 0)
+            {
+                wrappedStream.Seek(offset, SeekOrigin.Current);
+            }
+        }
+
         /// <summary>
         /// Advances the stream to the next 2880 byte block
         /// </summary>
-        internal void SkipBlock()
+        internal void SkipBlock(byte[] fill)
         {
             var offset = (int)(2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position);
 
             if (offset > 0)
             {
-                switch (fileMode)
-                {
-                    case FitsFileMode.Read:
-                        wrappedStream.Seek(offset, SeekOrigin.Current);
-                        break;
-                    case FitsFileMode.Write:
-                        wrappedStream.Write(new byte[offset], 0, offset);
-                        break;
-                }
+                wrappedStream.Write(fill, 0, offset);
             }
         }
     }

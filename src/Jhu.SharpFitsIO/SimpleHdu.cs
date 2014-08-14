@@ -424,11 +424,19 @@ namespace Jhu.SharpFitsIO
             // Mandatory keywords for primary and extension HDUs
             if (primary)
             {
-                cards.Add(new Card(Constants.FitsKeywordSimple, "T", "conforms to FITS standard"));
+                var simple = new Card(Constants.FitsKeywordSimple);
+                simple.SetValue(true);
+                simple.Comments = "conforms to FITS standard";
+
+                cards.Add(simple);
             }
             else
             {
-                cards.Add(new Card(Constants.FitsKeywordXtension, String.Empty, "extension type"));
+                var extension = new Card(Constants.FitsKeywordXtension);
+                extension.SetValue(String.Empty);
+                extension.Comments = "extension type";
+
+                cards.Add(extension);
             }
 
             // Mandatory for all HDUs
@@ -543,7 +551,7 @@ namespace Jhu.SharpFitsIO
             }
 
             // Skip block
-            Fits.SkipBlock();
+            Fits.SkipBlock(FitsFile.FillSpaceBuffer);
             dataPosition = Fits.WrappedStream.Position;
 
             totalStrides = GetTotalStrides();
@@ -681,7 +689,7 @@ namespace Jhu.SharpFitsIO
                 buffer.WriteTo(Fits.WrappedStream);
             }
 
-            Fits.SkipBlock();
+            Fits.SkipBlock(FitsFile.FillZeroBuffer);
             state = ObjectState.Done;
         }
 
