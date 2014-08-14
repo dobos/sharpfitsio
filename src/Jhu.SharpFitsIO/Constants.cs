@@ -7,6 +7,8 @@ namespace Jhu.SharpFitsIO
 {
     internal static class Constants
     {
+        public const int FitsBlockSize = 2880;
+
         public const string FitsKeywordSimple = "SIMPLE";
         public const string FitsKeywordExtend = "EXTEND";
         public const string FitsKeywordXtension = "XTENSION";
@@ -45,6 +47,8 @@ namespace Jhu.SharpFitsIO
         public const string FitsTypeNameSingleComplex = "SingleComplex";
         public const string FitsTypeNameDoubleComplex = "DoubleComplex";
         public const string FitsTypeNameArray = "Array";
+
+        public const string HeaderValueFormat = "{0,20}";
 
         /// <summary>
         /// Gets a set of keywords that are not to be treated as unique.

@@ -236,7 +236,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Boolean value)
         {
-            rawValue = value ? "T" : "F";
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value ? "T" : "F");
         }
 
         public Byte GetByte()
@@ -246,7 +246,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Byte value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public Int16 GetInt16()
@@ -256,7 +256,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Int16 value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public Int32 GetInt32()
@@ -266,7 +266,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Int32 value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public Int64 GetInt64()
@@ -276,7 +276,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Int64 value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public Char GetChar()
@@ -296,7 +296,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Single value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public Double GetDouble()
@@ -306,7 +306,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(Double value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value);
         }
 
         public SingleComplex GetSingleComplex()
@@ -316,7 +316,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(SingleComplex value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value.ToString(CultureInfo.InvariantCulture));
         }
 
         public DoubleComplex GetDoubleComplex()
@@ -326,7 +326,7 @@ namespace Jhu.SharpFitsIO
 
         public void SetValue(DoubleComplex value)
         {
-            rawValue = value.ToString(CultureInfo.InvariantCulture);
+            rawValue = String.Format(CultureInfo.InvariantCulture, Constants.HeaderValueFormat, value.ToString(CultureInfo.InvariantCulture));
         }
 
         #endregion
@@ -437,7 +437,13 @@ namespace Jhu.SharpFitsIO
             line += rawValue;
 
             var buffer = new byte[80];
-            Encoding.ASCII.GetBytes(line, 0, Math.Min(line.Length, 80), buffer, 0);
+            var res = Encoding.ASCII.GetBytes(line, 0, Math.Min(line.Length, 80), buffer, 0);
+
+            // FITS standard prefers spaces instead of 0 bytes in the header
+            for (int i = res; i < buffer.Length; i++)
+            {
+                buffer[i] = 0x20;
+            }
 
             stream.Write(buffer, 0, buffer.Length);
         }
