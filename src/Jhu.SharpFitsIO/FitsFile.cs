@@ -67,6 +67,12 @@ namespace Jhu.SharpFitsIO
         private BitConverterBase bitConverter;
 
         /// <summary>
+        /// If true, HDUs can be written buffered. This option is to be used
+        /// when the amount of data to be written to the stream is unknown.
+        /// </summary>
+        private bool isBufferingAllowed;
+
+        /// <summary>
         /// Stores the hdus read/written so far.
         /// </summary>
         [NonSerialized]
@@ -157,6 +163,12 @@ namespace Jhu.SharpFitsIO
             get { return bitConverter; }
         }
 
+        public bool IsBufferingAllowed
+        {
+            get { return isBufferingAllowed; }
+            set { isBufferingAllowed = value; }
+        }
+
         /// <summary>
         /// Gets a collection of HDUs blocks.
         /// </summary>
@@ -232,6 +244,8 @@ namespace Jhu.SharpFitsIO
             this.endianness = Endianness.BigEndian;
             this.bitConverter = null;
 
+            this.isBufferingAllowed = false;
+
             this.hdus = new List<SimpleHdu>();
             this.hduCounter = -1;
         }
@@ -247,6 +261,8 @@ namespace Jhu.SharpFitsIO
 
             this.endianness = old.endianness;
             this.bitConverter = old.bitConverter;
+
+            this.isBufferingAllowed = old.isBufferingAllowed;
 
             // Deep copy HDUs
             this.hdus = new List<SimpleHdu>();

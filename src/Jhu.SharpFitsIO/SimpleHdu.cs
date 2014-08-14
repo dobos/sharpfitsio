@@ -17,6 +17,7 @@ namespace Jhu.SharpFitsIO
         internal enum ObjectState
         {
             Start,
+            Buffering,
             Header,
             Strides,
             Done
@@ -25,7 +26,7 @@ namespace Jhu.SharpFitsIO
         #region Private member variables
 
         /// <summary>
-        /// Holds a reference to the underlying file
+        /// Holds a reference to the underlying file.
         /// </summary>
         /// <remarks>
         /// This value is set by the constructor when a new data file block
@@ -33,6 +34,12 @@ namespace Jhu.SharpFitsIO
         /// </remarks>
         [NonSerialized]
         protected FitsFile file;
+
+        /// <summary>
+        /// Used to write data to if the file is in buffered mode.
+        /// </summary>
+        [NonSerialized]
+        private SpillMemoryStream buffer;
 
         private ObjectState state;
 
@@ -115,6 +122,12 @@ namespace Jhu.SharpFitsIO
         public int TotalStrides
         {
             get { return totalStrides; }
+        }
+
+        [IgnoreDataMember]
+        protected int StrideCounter
+        {
+            get { return strideCounter; }
         }
 
         /// <summary>
@@ -247,6 +260,11 @@ namespace Jhu.SharpFitsIO
         {
             EnsureModifiable();
 
+            SetAxisLengthInternal(i, value);
+        }
+
+        protected void SetAxisLengthInternal(int i, int value)
+        {
             var keyword = Constants.FitsKeywordNAxis + i.ToString(FitsFile.Culture);
 
             Card card;
@@ -330,6 +348,7 @@ namespace Jhu.SharpFitsIO
         private void InitializeMembers(StreamingContext context)
         {
             this.file = null;
+            this.buffer = null;
 
             this.state = ObjectState.Start;
 
@@ -346,6 +365,7 @@ namespace Jhu.SharpFitsIO
         private void CopyMembers(SimpleHdu old)
         {
             this.file = old.file;
+            this.buffer = null;
 
             this.state = old.state;
 
@@ -385,15 +405,15 @@ namespace Jhu.SharpFitsIO
         {
             if (state != ObjectState.Start)
             {
-                throw new InvalidOperationException();  // TODO
+                throw Error.HeaderNotMofiableAfterStart();
             }
         }
 
         private void EnsureDuringStrides()
         {
-            if (state != ObjectState.Header && state != ObjectState.Strides)
+            if (state != ObjectState.Strides && state != ObjectState.Buffering)
             {
-                throw new InvalidOperationException();  // TODO
+                throw Error.HeaderMustBeReadOrWritten();
             }
         }
 
@@ -440,13 +460,13 @@ namespace Jhu.SharpFitsIO
             // Make sure file is in read more
             if (file.FileMode != FitsFileMode.Read)
             {
-                throw new InvalidOperationException();
+                throw Error.CannotReadFileOpenedForWrite();
             }
 
             // Make sure header is read only once
             if (state != ObjectState.Start)
             {
-                throw new InvalidOperationException();
+                throw Error.HeaderAlreadyReadOrWritten();
             }
 
             // Save start position
@@ -473,19 +493,43 @@ namespace Jhu.SharpFitsIO
             state = ObjectState.Header;
         }
 
-        public virtual void WriteHeader()
+        public void WriteHeader()
         {
             // Make sure file is in write more
             if (file.FileMode != FitsFileMode.Write)
             {
-                throw new InvalidOperationException();
+                throw Error.CannotWriteFileOpenedForRead();
             }
 
             // Make sure header is written only once
             if (state != ObjectState.Start)
             {
-                throw new InvalidOperationException();
+                throw Error.HeaderAlreadyReadOrWritten();
             }
+
+            // Check if the number of stride is known. If not and
+            // buffering mode is turned on
+            if (AxisCount > 0 && GetTotalStrides() == 0)
+            {
+                if (Fits.IsBufferingAllowed)
+                {
+                    state = ObjectState.Buffering;
+                    buffer = new SpillMemoryStream();
+                }
+                else
+                {
+                    throw Error.AxisLengthMustBeSet();
+                }
+            }
+            else
+            {
+                OnWriteHeader();
+            }
+        }
+
+        public virtual void OnWriteHeader()
+        {
+            state = ObjectState.Header;
 
             // Sort cards so that their order conforms to the standard
             cards.Sort();
@@ -503,7 +547,8 @@ namespace Jhu.SharpFitsIO
             dataPosition = Fits.WrappedStream.Position;
 
             totalStrides = GetTotalStrides();
-            state = ObjectState.Header;
+
+            state = ObjectState.Strides;
         }
 
         #endregion
@@ -567,7 +612,7 @@ namespace Jhu.SharpFitsIO
 
             if (strideBuffer.Length != Fits.WrappedStream.Read(strideBuffer, 0, strideBuffer.Length))
             {
-                throw new FitsException("Unexpected end of stream.");  // *** TODO
+                throw Error.UnexpectedEndOfStream();
             }
 
             strideCounter++;
@@ -605,15 +650,39 @@ namespace Jhu.SharpFitsIO
         {
             EnsureDuringStrides();
 
-            Fits.WrappedStream.Write(strideBuffer, 0, strideBuffer.Length);
+            // If buffered, write to the buffer instead of the output stream
+            var stream = (state == ObjectState.Buffering) ? buffer : Fits.WrappedStream;
+            stream.Write(strideBuffer, 0, strideBuffer.Length);
 
             strideCounter++;
+        }
 
-            if (!HasMoreStrides)
+        public void MarkEnd()
+        {
+            if (state != ObjectState.Buffering && state != ObjectState.Strides)
             {
-                Fits.SkipBlock();
-                state = ObjectState.Done;
+                throw Error.CannotMarkEnd();
             }
+
+            // If buffering is turned on, this is the time to
+            // write the header and flush data to the stream.
+            // Otherwise just finish the HDU
+
+            if (state == ObjectState.Buffering)
+            {
+                // Take rowcount from number of strides written
+                if (AxisCount > 0 && GetTotalStrides() == 0)
+                {
+                    throw Error.AxisLengthMustBeSet();
+                }
+
+                OnWriteHeader();
+
+                buffer.WriteTo(Fits.WrappedStream);
+            }
+
+            Fits.SkipBlock();
+            state = ObjectState.Done;
         }
 
         #endregion

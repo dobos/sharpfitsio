@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq.Expressions;
+using System.Data.Common;
 
 namespace Jhu.SharpFitsIO
 {
@@ -336,6 +337,44 @@ namespace Jhu.SharpFitsIO
         }
 
         /// <summary>
+        /// Creates columns from the fields of a data reader
+        /// </summary>
+        /// <param name="dr"></param>
+        public void CreateColumns(DbDataReader dr)
+        {
+            var schema = dr.GetSchemaTable();
+            var columns = new FitsTableColumn[schema.Rows.Count];
+
+            for (int i = 0; i < columns.Length; i++)
+            {
+                var row = schema.Rows[i];
+
+                var name = (string)row[SchemaTableColumn.ColumnName];
+                var type = (Type)row[SchemaTableColumn.DataType];
+                var length = (int)row[SchemaTableColumn.ColumnSize];
+                var nullable = (bool)row[SchemaTableColumn.AllowDBNull];
+                int repeat = 1;
+
+                // If data type is array or string then use length
+                if (type.IsArray)
+                {
+                    type = type.GetElementType();
+                    repeat = length;
+                }
+                else if (type == typeof(string))
+                {
+                    repeat = length;
+                }
+
+                // Create type and columns
+                var fitsType = FitsDataType.Create(type, repeat, nullable);
+                columns[i] = FitsTableColumn.Create(name, fitsType);
+            }
+
+            CreateColumns(columns);
+        }
+
+        /// <summary>
         /// Returns the size of a field of a struct in bytes, based on marshaling attributes.
         /// </summary>
         /// <param name="field"></param>
@@ -446,6 +485,36 @@ namespace Jhu.SharpFitsIO
             }
 
             WriteStride();
+        }
+
+        /// <summary>
+        /// Writes rows from a data reader
+        /// </summary>
+        /// <param name="dr"></param>
+        public void WriteFromDataReader(DbDataReader dr)
+        {
+            // Create columns now if they haven't been created
+            if (columns.Count == 0)
+            {
+                CreateColumns(dr);
+            }
+
+            // This call will succeed even if number of rows in unknown
+            // if file is set to buffering mode
+            WriteHeader();
+
+            var values = new object[dr.FieldCount];
+            while (dr.Read())
+            {
+                dr.GetValues(values);
+                WriteNextRow(values);
+            }
+
+            // Set number of rows to number of written strides
+            SetAxisLengthInternal(2, StrideCounter);
+
+            // Mark end of HDU
+            MarkEnd();
         }
 
         #region Read delegate generator functions
@@ -787,390 +856,6 @@ namespace Jhu.SharpFitsIO
 
         #endregion
         #region Write delegate generator functions
-
-#if false
-        /// <summary>
-        /// Returns a delegate to write a boxed, strongly typed variable into
-        /// binary format.
-        /// </summary>
-        /// <param name="column"></param>
-        /// <returns></returns>
-        private BinaryWriterDelegate CreateBinaryWriterDelegate(FitsTableColumn column)
-        {
-            // Complex types firts, then scalar and arrays
-            if (column.DataType.Type == typeof(String))
-            {
-                return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                {
-                    if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                    {
-                        for (int i = 0; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-                    }
-                    else
-                    {
-                        var str = (string)value;
-                        var len = Math.Min(str.Length, col.DataType.Repeat);
-
-                        Encoding.ASCII.GetBytes((string)value, 0, len, bytes, startIndex);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-                    }
-
-                    return col.DataType.Repeat;
-                };
-            }
-            else if (column.DataType.Repeat == 1)
-            {
-                // Scalars
-                if (column.DataType.Type == typeof(Boolean))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Byte)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Boolean)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(SByte))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((SByte)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((SByte)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Byte))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Byte)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Byte)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int16))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Int16)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Int16)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt16))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((UInt16)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((UInt16)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int32))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Int32)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Int32)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt32))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((UInt32)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((UInt32)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int64))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Int64)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Int64)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt64))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((UInt64)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((UInt64)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Single))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Single)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Single)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(Double))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((Double)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((Double)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(SingleComplex))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((SingleComplex)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((SingleComplex)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else if (column.DataType.Type == typeof(DoubleComplex))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            return converter.GetBytes((DoubleComplex)col.DataType.NullValue, bytes, startIndex);
-                        }
-                        else
-                        {
-                            return converter.GetBytes((DoubleComplex)value, bytes, startIndex);
-                        }
-                    };
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
-            else
-            {
-                // Arrays
-                if (column.DataType.Type == typeof(Boolean))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        var val = (Boolean[])value;
-                        var len = Math.Min(val.Length, col.DataType.Repeat);
-
-                        if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
-                        {
-                            len = 0;
-                        }
-
-                        converter.GetBytes(val, bytes, startIndex, len);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-
-                        return col.DataType.Repeat;
-                    };
-                }
-                else if (column.DataType.Type == typeof(SByte))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        var val = (Boolean[])value;
-                        var len = Math.Min(val.Length, col.DataType.Repeat);
-
-                        converter.GetBytes(val, bytes, startIndex, len);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-
-                        return col.DataType.Repeat;
-                    };
-                }
-                else if (column.DataType.Type == typeof(Byte))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        var val = (Boolean[])value;
-                        var len = Math.Min(val.Length, col.DataType.Repeat);
-
-                        converter.GetBytes(val, bytes, startIndex, len);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-
-                        return col.DataType.Repeat;
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int16))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        var val = (Boolean[])value;
-                        var len = Math.Min(val.Length, col.DataType.Repeat);
-
-                        converter.GetBytes(val, bytes, startIndex, len);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-
-                        return col.DataType.Repeat;
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt16))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        var val = (Boolean[])value;
-                        var len = Math.Min(val.Length, col.DataType.Repeat);
-
-                        converter.GetBytes(val, bytes, startIndex, len);
-
-                        for (int i = len; i < col.DataType.Repeat; i++)
-                        {
-                            bytes[startIndex + i] = 0x00;
-                        }
-
-                        return col.DataType.Repeat;
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int32))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((Int32[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt32))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((UInt32[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(Int64))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((Int64[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(UInt64))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((UInt64[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(Single))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((Single[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(Double))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((Double[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(SingleComplex))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((SingleComplex[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else if (column.DataType.Type == typeof(DoubleComplex))
-                {
-                    return delegate(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
-                    {
-                        return converter.GetBytes((DoubleComplex[])value, bytes, startIndex, col.DataType.Repeat);
-                    };
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
-        }
-#endif
 
         private int WriteString(BitConverterBase converter, FitsTableColumn col, byte[] bytes, int startIndex, object value)
         {
