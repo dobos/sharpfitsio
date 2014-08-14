@@ -17,7 +17,8 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Boolean),
                     Code = 'L',
                     ByteSize = sizeof(Byte),
-                    NullValue = (Byte)0x80,
+                    NullValue = Constants.FitsLogicalNull,
+                    IsInteger = false,
                 };
             }
         }
@@ -32,7 +33,8 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Byte),
                     Code = 'X',
                     ByteSize = sizeof(Byte),
-                    NullValue = (Byte)0x80,
+                    NullValue = Constants.FitsLogicalNull,
+                    IsInteger = false,
                 };
             }
         }
@@ -48,6 +50,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'B',
                     ByteSize = sizeof(Byte),
                     NullValue = (Byte)0x80,
+                    IsInteger = true,
                 };
             }
         }
@@ -63,6 +66,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'I',
                     ByteSize = sizeof(Int16),
                     NullValue = System.Int16.MinValue,
+                    IsInteger = true,
                 };
             }
         }
@@ -78,6 +82,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'J',
                     ByteSize = sizeof(Int32),
                     NullValue = System.Int32.MinValue,
+                    IsInteger = true,
                 };
             }
         }
@@ -93,6 +98,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'K',
                     ByteSize = sizeof(Int64),
                     NullValue = System.Int64.MinValue,
+                    IsInteger = true,
                 };
             }
         }
@@ -107,7 +113,8 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(String),
                     Code = 'A',
                     ByteSize = sizeof(Byte),
-                    NullValue = "\x00",
+                    NullValue = (Byte)0xFF,
+                    IsInteger = false,
                 };
             }
         }
@@ -122,7 +129,8 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Single),
                     Code = 'E',
                     ByteSize = sizeof(Single),
-                    NullValue = System.Single.NaN,
+                    NullValue = float.NaN,
+                    IsInteger = false,
                 };
             }
         }
@@ -137,7 +145,8 @@ namespace Jhu.SharpFitsIO
                     Type = typeof(Double),
                     Code = 'D',
                     ByteSize = sizeof(Double),
-                    NullValue = System.Double.NaN,
+                    NullValue = double.NaN,
+                    IsInteger = false,
                 };
             }
         }
@@ -153,6 +162,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'C',
                     ByteSize = 2 * sizeof(Single),
                     NullValue = SharpFitsIO.SingleComplex.NaN,
+                    IsInteger = false,
                 };
             }
         }
@@ -168,6 +178,7 @@ namespace Jhu.SharpFitsIO
                     Code = 'M',
                     ByteSize = 2 * sizeof(Double),
                     NullValue = SharpFitsIO.DoubleComplex.NaN,
+                    IsInteger = false,
                 };
             }
         }

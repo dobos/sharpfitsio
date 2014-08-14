@@ -87,7 +87,8 @@ namespace Jhu.SharpFitsIO
 
         public Boolean ToBoolean(byte[] bytes, int startIndex)
         {
-            return bytes[startIndex] != 0;
+            // It's true if not 0, 'f' or 'F'
+            return bytes[startIndex] != 0 && bytes[startIndex] != Constants.FitsLogicalFalse && bytes[startIndex] != Constants.FitsLogicalFalseAlternate;
         }
 
         public int ToBoolean(byte[] bytes, int startIndex, out Boolean value)
@@ -124,7 +125,8 @@ namespace Jhu.SharpFitsIO
 
         unsafe public int GetBytes(Boolean value, byte[] bytes, int startIndex)
         {
-            bytes[startIndex] = value ? (Byte)0x01 : (Byte)0x00;
+            // True: 'T', False: 'F'
+            bytes[startIndex] = value ? Constants.FitsLogicalTrue : Constants.FitsLogicalFalse;
             return sizeof(Byte);
         }
 

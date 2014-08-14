@@ -49,6 +49,11 @@ namespace Jhu.SharpFitsIO
         public const string FitsTypeNameArray = "Array";
 
         public const string HeaderValueFormat = "{0,20}";
+        public const byte FitsLogicalNull = 0x00;
+        public const byte FitsLogicalTrue = 0x54;               // 'T'
+        public const byte FitsLogicalTrueAlternate = 0x74;      // 't'
+        public const byte FitsLogicalFalse = 0x46;              // 'F'
+        public const byte FitsLogicalFalseAlternate = 0x66;     // 'f'
 
         /// <summary>
         /// Gets a set of keywords that are not to be treated as unique.

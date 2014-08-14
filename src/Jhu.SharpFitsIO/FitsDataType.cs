@@ -45,6 +45,7 @@ namespace Jhu.SharpFitsIO
         private int byteSize;
 
         private bool isNullable;
+        private bool isInteger;
         private object nullValue;
         private double? scale;
         private double? zero;
@@ -114,6 +115,12 @@ namespace Jhu.SharpFitsIO
             set { isNullable = value; }
         }
 
+        public bool IsInteger
+        {
+            get { return isInteger; }
+            internal set { isInteger = value; }
+        }
+
         /// <summary>
         /// Gets or sets the value indicating null.
         /// </summary>
@@ -179,6 +186,7 @@ namespace Jhu.SharpFitsIO
             this.repeat = 1;
             this.byteSize = 0;
             this.isNullable = false;
+            this.isInteger = false;
             this.nullValue = null;
             this.scale = null;
             this.zero = null;
@@ -192,6 +200,7 @@ namespace Jhu.SharpFitsIO
             this.repeat = old.repeat;
             this.byteSize = old.byteSize;
             this.isNullable = old.isNullable;
+            this.isInteger = old.isInteger;
             this.nullValue = old.nullValue;
             this.scale = old.scale;
             this.zero = old.zero;

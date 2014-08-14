@@ -229,7 +229,7 @@ namespace Jhu.SharpFitsIO
             }
 
             // TNULLn
-            if (dataType.IsNullable)
+            if (dataType.IsNullable && dataType.IsInteger)
             {
                 card = new Card(Constants.FitsKeywordTNull, this.id);
                 card.SetValue(dataType.NullValue);
