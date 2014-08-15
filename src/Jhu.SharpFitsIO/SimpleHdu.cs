@@ -498,7 +498,8 @@ namespace Jhu.SharpFitsIO
             dataPosition = Fits.WrappedStream.Position;
             
             totalStrides = GetTotalStrides();
-            state = ObjectState.Header;
+            
+            state = ObjectState.Strides;
         }
 
         public void WriteHeader()
