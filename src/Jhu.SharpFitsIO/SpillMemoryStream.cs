@@ -47,7 +47,7 @@ namespace Jhu.SharpFitsIO
         private void InitializeMembers()
         {
             this.position = 0;
-            this.spillLimit = 0x100000;     // 1MB
+            this.spillLimit = long.MaxValue;     // 1MB
             this.spillPath = null;
             this.memory = new MemoryStream();
             this.spill = null;
