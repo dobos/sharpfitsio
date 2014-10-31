@@ -67,6 +67,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StraightBitConverterTest.cs" />
     <Compile Include="SwapBitConverterTest.cs" />
+    <Compile Include="SpillMemoryStreamTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jhu.SharpFitsIO\Jhu.SharpFitsIO.csproj">

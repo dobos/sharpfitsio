@@ -10,50 +10,69 @@ namespace Jhu.SharpFitsIO
     /// Implements a write-only memory stream that spills onto the
     /// disk when a given size is reached.
     /// </summary>
-    internal class SpillMemoryStream : Stream
+    /// <remarks>
+    /// This class only implements the write functions of a standard
+    /// stream. When all data is written to the stream, it can be
+    /// written to another using the WriteTo function.
+    /// </remarks>
+    internal class SpillMemoryStream : Stream, IDisposable
     {
         #region Private member varibles
 
         private long position;
         private long spillLimit;
         private string spillPath;
-        private MemoryStream memory;
-        private FileStream spill;
+
+        /// <summary>
+        /// Internal memory buffer to store data temporarily until the
+        /// spill limit is reached.
+        /// </summary>
+        private MemoryStream memoryBuffer;
+
+        /// <summary>
+        /// External file buffer to store data temporarily after the
+        /// spill limit is reached.
+        /// </summary>
+        private FileStream spillBuffer;
 
         #endregion
+        #region Properties
 
-        #region Constructors and initializers
-
-        public SpillMemoryStream()
+        /// <summary>
+        /// Gets the current position of the stream.
+        /// </summary>
+        public override long Position
         {
-            InitializeMembers();
+            get { return position; }
+            set { throw new InvalidOperationException(); }
         }
 
-        public SpillMemoryStream(long spillLimit)
+        /// <summary>
+        /// Gets or sets the size limit at which data is spilled to the disk.
+        /// </summary>
+        public long SpillLimit
         {
-            InitializeMembers();
-
-            this.spillLimit = spillLimit;
+            get { return spillLimit; }
+            set
+            {
+                EnsureNotOpen();
+                spillLimit = value;
+            }
         }
 
-        public SpillMemoryStream(long spillLimit, string spillPath)
+        /// <summary>
+        /// Gets or sets the path of temporary file used when data is spilled
+        /// to the disk.
+        /// </summary>
+        public string SpillPath
         {
-            InitializeMembers();
-
-            this.spillLimit = spillLimit;
-            this.spillPath = spillPath;
+            get { return spillPath; }
+            set
+            {
+                EnsureNotOpen();
+                spillPath = value;
+            }
         }
-
-        private void InitializeMembers()
-        {
-            this.position = 0;
-            this.spillLimit = long.MaxValue;     // 1MB
-            this.spillPath = null;
-            this.memory = new MemoryStream();
-            this.spill = null;
-        }
-
-        #endregion
 
         public override bool CanRead
         {
@@ -80,51 +99,85 @@ namespace Jhu.SharpFitsIO
             get { return position; }
         }
 
-        public override long Position
+        #endregion
+        #region Constructors and initializers
+
+        public SpillMemoryStream()
         {
-            get { return position; }
-            set { throw new InvalidOperationException(); }
+            InitializeMembers();
         }
 
-        public override void Close()
+        public SpillMemoryStream(long spillLimit)
         {
-            if (spill != null)
-            {
-                spill.Close();
-            }
+            InitializeMembers();
 
-            if (memory != null)
-            {
-                memory.Close();
-            }
+            this.spillLimit = spillLimit;
+        }
+
+        public SpillMemoryStream(long spillLimit, string spillPath)
+        {
+            InitializeMembers();
+
+            this.spillLimit = spillLimit;
+            this.spillPath = spillPath;
+        }
+
+        private void InitializeMembers()
+        {
+            this.position = 0;
+            this.spillLimit = 0x100000;          // 1MB
+            this.spillPath = null;
+            this.memoryBuffer = null;
+            this.spillBuffer = null;
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (spill != null)
+                if (spillBuffer != null)
                 {
-                    spill.Dispose();
+                    spillBuffer.Dispose();
                 }
 
-                if (memory != null)
+                if (memoryBuffer != null)
                 {
-                    memory.Dispose();
+                    memoryBuffer.Dispose();
+                }
+
+                if (spillPath != null && File.Exists(spillPath))
+                {
+                    File.Delete(spillPath);
                 }
             }
+        }
 
-            if (spillPath != null && File.Exists(spillPath))
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        #endregion
+        #region Stream implementation
+
+        public override void Close()
+        {
+            if (spillBuffer != null)
             {
-                File.Delete(spillPath);
+                spillBuffer.Close();
+            }
+
+            if (memoryBuffer != null)
+            {
+                memoryBuffer.Close();
             }
         }
 
         public override void Flush()
         {
-            if (spill != null)
+            if (spillBuffer != null)
             {
-                spill.Flush();
+                spillBuffer.Flush();
             }
         }
 
@@ -150,15 +203,15 @@ namespace Jhu.SharpFitsIO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (spill == null && position + count < spillLimit)
+            if (position + count < spillLimit)
             {
-                memory.Write(buffer, offset, count);
+                OpenMemoryBuffer();
+                memoryBuffer.Write(buffer, offset, count);
             }
             else
             {
-                OpenSpillFile();
-
-                spill.Write(buffer, offset, count);
+                OpenSpillBuffer();
+                spillBuffer.Write(buffer, offset, count);
             }
 
             position += count;
@@ -166,53 +219,69 @@ namespace Jhu.SharpFitsIO
 
         public override void WriteByte(byte value)
         {
-            if (spill == null && position + 1 < spillLimit)
+            if (position + 1 < spillLimit)
             {
-                memory.WriteByte(value);
+                OpenMemoryBuffer();
+                memoryBuffer.WriteByte(value);
             }
             else
             {
-                OpenSpillFile();
-
-                spill.WriteByte(value);
+                OpenSpillBuffer();
+                spillBuffer.WriteByte(value);
             }
+
+            position++;
         }
 
+        #endregion
+
+        /// <summary>
+        /// Writes the content of both buffers to an output stream.
+        /// </summary>
+        /// <param name="stream"></param>
         public void WriteTo(Stream stream)
         {
             // TODO: this function could use async copy but that just
             // overcomplicates things
 
             // Flush memory to stream
-            if (memory != null)
+            if (memoryBuffer != null)
             {
-                memory.WriteTo(stream);
+                memoryBuffer.WriteTo(stream);
             }
 
-            if (spill != null)
+            if (spillBuffer != null)
             {
                 // Rewind file but remember position
-                var pos = spill.Position;
-                spill.Seek(0, SeekOrigin.Begin);
+                var pos = spillBuffer.Position;
+                spillBuffer.Seek(0, SeekOrigin.Begin);
 
                 // Copy file to output stream
                 var i = 0;
                 var buffer = new byte[0x10000];     // 64k
                 while (i < pos)
                 {
-                    var count = spill.Read(buffer, 0, buffer.Length);
+                    var count = spillBuffer.Read(buffer, 0, buffer.Length);
                     stream.Write(buffer, 0, count);
 
                     i += count;
                 }
 
-                spill.Seek(pos, SeekOrigin.Begin);
+                spillBuffer.Seek(pos, SeekOrigin.Begin);
             }
         }
 
-        private void OpenSpillFile()
+        private void OpenMemoryBuffer()
         {
-            if (spill != null)
+            if (memoryBuffer == null && spillLimit > 0)
+            {
+                memoryBuffer = new MemoryStream();
+            }
+        }
+
+        private void OpenSpillBuffer()
+        {
+            if (spillBuffer == null)
             {
                 // If path is not set use temp
                 if (spillPath == null)
@@ -220,7 +289,15 @@ namespace Jhu.SharpFitsIO
                     spillPath = Path.GetTempFileName();
                 }
 
-                spill = new FileStream(spillPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                spillBuffer = new FileStream(spillPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+        }
+
+        private void EnsureNotOpen()
+        {
+            if (memoryBuffer != null || spillBuffer != null)
+            {
+                throw new InvalidOperationException("Stream is already open.");     // TODO ***
             }
         }
     }
