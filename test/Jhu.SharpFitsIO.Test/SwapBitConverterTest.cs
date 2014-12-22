@@ -159,10 +159,10 @@ namespace Jhu.SharpFitsIO
             var bytes = new byte[1];
 
             bc.GetBytes(true, bytes, 0);
-            Assert.AreEqual("01", ByteArrayToString(bytes));
+            Assert.AreEqual("54", ByteArrayToString(bytes));        // FITS uses 0x54 for true
 
             bc.GetBytes(false, bytes, 0);
-            Assert.AreEqual("00", ByteArrayToString(bytes));
+            Assert.AreEqual("46", ByteArrayToString(bytes));        // FITS uses 0x46 for false
         }
 
         [TestMethod]
