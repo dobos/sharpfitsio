@@ -553,7 +553,6 @@ namespace Jhu.SharpFitsIO
             }
             else
             {
-                var val = (String)value;
                 int len;
 
                 if (col.DataType.IsNullable && (value == null || value == DBNull.Value))
@@ -562,6 +561,7 @@ namespace Jhu.SharpFitsIO
                 }
                 else
                 {
+                    var val = (String)value;
                     len = Math.Min(val.Length, col.DataType.Repeat);
                     Encoding.ASCII.GetBytes((string)value, 0, len, bytes, startIndex);
                 }
