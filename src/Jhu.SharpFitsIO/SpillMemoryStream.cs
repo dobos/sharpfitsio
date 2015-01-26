@@ -152,11 +152,6 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
         #endregion
         #region Stream implementation
 
