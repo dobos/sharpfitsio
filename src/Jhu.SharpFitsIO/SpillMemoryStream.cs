@@ -255,15 +255,15 @@ namespace Jhu.SharpFitsIO
             if (spillBuffer != null)
             {
                 // Rewind file but remember position
-                var pos = spillBuffer.Position;
+                long pos = spillBuffer.Position;
                 spillBuffer.Seek(0, SeekOrigin.Begin);
 
                 // Copy file to output stream
-                var i = 0;
-                var buffer = new byte[0x10000];     // 64k
+                long i = 0;
+                byte[] buffer = new byte[0x10000];     // 64k
                 while (i < pos)
                 {
-                    var count = spillBuffer.Read(buffer, 0, buffer.Length);
+                    int count = spillBuffer.Read(buffer, 0, buffer.Length);
                     stream.Write(buffer, 0, count);
 
                     i += count;
