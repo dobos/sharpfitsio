@@ -688,6 +688,7 @@ namespace Jhu.SharpFitsIO
                 OnWriteHeader();
 
                 buffer.WriteTo(Fits.WrappedStream);
+                buffer.Close();
             }
 
             Fits.SkipBlock(FitsFile.FillZeroBuffer);

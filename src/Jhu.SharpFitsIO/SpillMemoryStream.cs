@@ -171,6 +171,8 @@ namespace Jhu.SharpFitsIO
             {
                 memoryBuffer.Close();
             }
+
+            base.Close();
         }
 
         public override void Flush()
