@@ -35,7 +35,7 @@ namespace Jhu.SharpFitsIO
             return new SingleComplex(Single.Parse(parts[0], provider), Single.Parse(parts[1], provider));
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return ToString("G", System.Threading.Thread.CurrentThread.CurrentCulture);
         }
