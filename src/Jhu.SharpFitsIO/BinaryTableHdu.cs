@@ -417,11 +417,16 @@ namespace Jhu.SharpFitsIO
         /// <returns></returns>
         public bool ReadNextRow(object[] values)
         {
+            return ReadNextRow(values, 0);
+        }
+
+        public bool ReadNextRow(object[] values, int startIndex)
+        {
             if (HasMoreStrides)
             {
                 ReadStride();
 
-                int startIndex = 0;
+                int offset = 0;
                 for (int i = 0; i < Columns.Count; i++)
                 {
                     int res;
@@ -429,18 +434,18 @@ namespace Jhu.SharpFitsIO
 
                     if (column.DataType.Type == typeof(String))
                     {
-                        res = ReadString(Fits.BitConverter, column, StrideBuffer, startIndex, out values[i]);
+                        res = ReadString(Fits.BitConverter, column, StrideBuffer, offset, out values[startIndex + i]);
                     }
                     else if (column.DataType.Repeat == 1)
                     {
-                        res = ReadScalar(Fits.BitConverter, column, StrideBuffer, startIndex, out values[i]);
+                        res = ReadScalar(Fits.BitConverter, column, StrideBuffer, offset, out values[startIndex + i]);
                     }
                     else
                     {
-                        res = ReadArray(Fits.BitConverter, column, StrideBuffer, startIndex, out values[i]);
+                        res = ReadArray(Fits.BitConverter, column, StrideBuffer, offset, out values[startIndex + i]);
                     }
 
-                    startIndex += res;
+                    offset += res;
                 }
 
                 return true;
