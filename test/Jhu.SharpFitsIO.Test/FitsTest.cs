@@ -14,7 +14,9 @@ namespace Jhu.SharpFitsIO
     {
         private FitsFile OpenFits(string filename)
         {
-            var path = String.Format(@"..\..\..\data\{0}", filename);
+            var sln = Path.GetDirectoryName(Environment.GetEnvironmentVariable("SolutionPath"));
+            var path = Path.Combine(sln, @"sharpfitsio\test\data", filename);
+
             FitsFile f;
 
             if (filename.EndsWith(".gz"))
