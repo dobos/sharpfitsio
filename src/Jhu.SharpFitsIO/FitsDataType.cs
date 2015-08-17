@@ -271,7 +271,7 @@ namespace Jhu.SharpFitsIO
             }
             else
             {
-                throw new NotImplementedException();
+                throw new InvalidOperationException(ExceptionMessages.UnsuportedDataType);
             }
 
             dt.repeat = repeat;

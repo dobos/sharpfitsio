@@ -138,7 +138,13 @@
   <data name="HeaderNotMofiableAfterStart" xml:space="preserve">
     <value>Header and associated values cannot be modified after the header has been written.</value>
   </data>
+  <data name="MaxColumnsUnsupported" xml:space="preserve">
+    <value>Columns with varbinary(max), varchar(max), image and text are unsupported.</value>
+  </data>
   <data name="UnexpectedEndOfStream" xml:space="preserve">
     <value>Unexpected end of stream.</value>
+  </data>
+  <data name="UnsuportedDataType" xml:space="preserve">
+    <value>Unsupported data type.</value>
   </data>
 </root>

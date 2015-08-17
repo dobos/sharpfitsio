@@ -3,6 +3,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Data;
+using System.Data.SqlClient;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Jhu.SharpFitsIO
@@ -342,6 +344,42 @@ namespace Jhu.SharpFitsIO
                     new DoubleComplex(11 * init, 12 * init),
                     new DoubleComplex(13 * init, 14 * init)
                 });
+            }
+        }
+
+        [TestMethod]
+        public void TestColumns_DataReader()
+        {
+            var sql = @"
+SELECT CAST(1.0000 AS float) [float],
+       CAST(1.0000 AS real) [real],
+       CAST(1 AS tinyint) [tinyint],
+       CAST(1 AS smallint) [smallint],
+       CAST(1 AS int) [int],
+       CAST(1 AS bigint) [bigint],
+       CAST('a' AS char(1)) [char(1)],
+       CAST('sample text' AS char(50)) [char(50)],
+       CAST('sample text' AS nchar(50)) [nchar(50)],
+       CAST('sample text' AS varchar(50)) [varchar(50)],
+       CAST(N'sample text' AS nvarchar(50)) [nvarchar(50)]
+  FROM [Graywulf_IO_Test].[dbo].[SampleData]";
+
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            using (var cn = new SqlConnection("data source=localhost;integrated security=true"))
+            {
+                cn.Open();
+                using (var cmd = new SqlCommand(sql, cn))
+                {
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        tab.RowCount = 1;
+                        tab.WriteFromDataReader(dr);
+                    }
+                }
             }
         }
     }

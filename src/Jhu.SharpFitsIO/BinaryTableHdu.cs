@@ -363,6 +363,11 @@ namespace Jhu.SharpFitsIO
                 }
                 else if (type == typeof(string))
                 {
+                    if (length < 1 || length > 8000)
+                    {
+                        throw new InvalidOperationException(ExceptionMessages.MaxColumnsUnsupported);
+                    }
+
                     repeat = length;
                 }
 
