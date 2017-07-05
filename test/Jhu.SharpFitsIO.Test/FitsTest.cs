@@ -12,9 +12,33 @@ namespace Jhu.SharpFitsIO
     [TestClass]
     public class FitsTest
     {
+        /// <summary>
+        /// Find the outmost directory with a solution file
+        /// </summary>
+        /// <returns></returns>
+        protected string GetSolutionDir()
+        {
+            var dir = Environment.CurrentDirectory;
+            string best = null;
+
+            while (dir != null)
+            {
+                var files = Directory.GetFiles(dir, "*.sln");
+
+                if (files != null && files.Length > 0)
+                {
+                    best = dir;
+                }
+
+                dir = Directory.GetParent(dir)?.FullName;
+            }
+
+            return best;
+        }
+
         private FitsFile OpenFits(string filename)
         {
-            var sln = Path.GetDirectoryName(Environment.GetEnvironmentVariable("SolutionPath"));
+            var sln = GetSolutionDir();
             var path = Path.Combine(sln, @"sharpfitsio\test\data", filename);
 
             FitsFile f;
