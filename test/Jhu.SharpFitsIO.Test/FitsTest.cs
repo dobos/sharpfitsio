@@ -39,7 +39,7 @@ namespace Jhu.SharpFitsIO
         private FitsFile OpenFits(string filename)
         {
             var sln = GetSolutionDir();
-            var path = Path.Combine(sln, @"sharpfitsio\test\data", filename);
+            var path = Path.Combine(sln, @"modules\sharpfitsio\test\data", filename);
 
             FitsFile f;
 
