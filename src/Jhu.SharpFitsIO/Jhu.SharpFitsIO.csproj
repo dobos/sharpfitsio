@@ -103,6 +103,7 @@
     <Compile Include="SwapBitConverter.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="build.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
