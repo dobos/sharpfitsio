@@ -377,7 +377,7 @@ SELECT CAST(1.0000 AS float) [float],
                     using (var dr = cmd.ExecuteReader())
                     {
                         tab.RowCount = 1;
-                        tab.WriteFromDataReader(dr);
+                        tab.WriteFromDataReaderAsync(dr).Wait();
                     }
                 }
             }

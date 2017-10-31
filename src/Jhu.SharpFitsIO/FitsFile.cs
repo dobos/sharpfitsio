@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.Serialization;
@@ -490,6 +490,11 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
+        public SimpleHdu ReadNextHdu()
+        {
+            return ReadNextHduAsync().Result;
+        }
+
         /// <summary>
         /// Reads the next HDU from the file.
         /// </summary>
@@ -498,14 +503,14 @@ namespace Jhu.SharpFitsIO
         /// Skips reading the rest of the current HDU, so data will not
         /// be read into memory.
         /// </remarks>
-        public SimpleHdu ReadNextHdu()
+        public async Task<SimpleHdu> ReadNextHduAsync()
         {
             if (hduCounter != -1)
             {
                 // If we are not at the beginning of the file, read to the end of the
                 // block, read the block footer and position stream on the beginning
                 // of the next file block
-                hdus[hduCounter].ReadToFinish();
+                await hdus[hduCounter].ReadToFinishAsync();
             }
 
             try
@@ -519,12 +524,12 @@ namespace Jhu.SharpFitsIO
                 // manually created object, otherwise create one automatically.
                 if (hduCounter < hdus.Count)
                 {
-                    nextHdu = ReadNextHdu(hdus[hduCounter]);
+                    nextHdu = await ReadNextHduAsync(hdus[hduCounter]);
                 }
                 else
                 {
                     // Create a new block automatically, if collection is not predefined
-                    nextHdu = ReadNextHdu(null);
+                    nextHdu = await ReadNextHduAsync(null);
                     if (nextHdu != null)
                     {
                         hdus.Add(nextHdu);
@@ -549,7 +554,7 @@ namespace Jhu.SharpFitsIO
             return null;
         }
 
-        private SimpleHdu ReadNextHdu(SimpleHdu prototype)
+        private async Task<SimpleHdu> ReadNextHduAsync(SimpleHdu prototype)
         {
             SimpleHdu hdu;
 
@@ -563,7 +568,7 @@ namespace Jhu.SharpFitsIO
                 hdu = new SimpleHdu(this);
             }
 
-            hdu.ReadHeader();
+            await hdu.ReadHeaderAsync();
 
             // Dispatch different types of FITS HDUs
             if (prototype != null)
@@ -588,25 +593,32 @@ namespace Jhu.SharpFitsIO
             }
         }
 
-        internal void SkipBlock()
+        internal Task SkipBlockAsync()
         {
-            var offset = (int)(2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position);
+            // NOT: seek is sync when reading, probably it only sets
+            // the file pointer and the async call will only happen when
+            // reading from the file.
+            // We keep the async signature here for compatibility
+
+            var offset = (int)(Constants.FitsBlockSize * ((wrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - wrappedStream.Position);
             if (offset > 0)
             {
                 wrappedStream.Seek(offset, SeekOrigin.Current);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Advances the stream to the next 2880 byte block
         /// </summary>
-        internal void SkipBlock(byte[] fill)
+        internal async Task SkipBlockAsync(byte[] fill)
         {
-            var offset = (int)(2880 * ((wrappedStream.Position + 2879) / 2880) - wrappedStream.Position);
+            var offset = (int)(Constants.FitsBlockSize * ((wrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - wrappedStream.Position);
 
             if (offset > 0)
             {
-                wrappedStream.Write(fill, 0, offset);
+                await wrappedStream.WriteAsync(fill, 0, offset);
             }
         }
     }

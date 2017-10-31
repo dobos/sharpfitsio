@@ -145,7 +145,7 @@ namespace Jhu.SharpFitsIO
             SimpleHdu hdu;
             while ((hdu = (SimpleHdu)f.ReadNextHdu()) != null)
             {
-                hdu.ReadToFinish();
+                hdu.ReadToFinishAsync().Wait();
             }
 
             f.Close();

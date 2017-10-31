@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.IO;
 
 namespace Jhu.SharpFitsIO
@@ -17,6 +16,14 @@ namespace Jhu.SharpFitsIO
     /// </remarks>
     internal class SpillMemoryStream : Stream, IDisposable
     {
+        private class AsyncCallbackState
+        {
+            public Stream Stream { get; set; }
+            public long Count { get; set; }
+            public AsyncCallback Callback { get; set; }
+            public object State { get; set; }
+        }
+
         #region Private member varibles
 
         private long position;
@@ -178,9 +185,26 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (spillBuffer != null)
+            {
+                return spillBuffer.FlushAsync();
+            }
+            else
+            {
+                return Task.CompletedTask;
+            }
+        }
+        
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new InvalidOperationException();
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         public override int ReadByte()
@@ -197,7 +221,7 @@ namespace Jhu.SharpFitsIO
         {
             throw new InvalidOperationException();
         }
-
+        
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (position + count < spillLimit)
@@ -209,6 +233,22 @@ namespace Jhu.SharpFitsIO
             {
                 OpenSpillBuffer();
                 spillBuffer.Write(buffer, offset, count);
+            }
+
+            position += count;
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (position + count < spillLimit)
+            {
+                OpenMemoryBuffer();
+                memoryBuffer.Write(buffer, offset, count);
+            }
+            else
+            {
+                OpenSpillBuffer();
+                await spillBuffer.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
             position += count;
@@ -263,6 +303,28 @@ namespace Jhu.SharpFitsIO
 
                     i += count;
                 }
+
+                spillBuffer.Seek(pos, SeekOrigin.Begin);
+            }
+        }
+
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            // Flush memory to stream
+            if (memoryBuffer != null)
+            {
+                // TODO: need to rewind here?
+                await memoryBuffer.CopyToAsync(destination, bufferSize, cancellationToken);
+            }
+
+            if (spillBuffer != null)
+            {
+                // Rewind file but remember position
+                long pos = spillBuffer.Position;
+                spillBuffer.Seek(0, SeekOrigin.Begin);
+
+                // Copy file to output stream
+                await spillBuffer.CopyToAsync(destination, bufferSize, cancellationToken);
 
                 spillBuffer.Seek(pos, SeekOrigin.Begin);
             }

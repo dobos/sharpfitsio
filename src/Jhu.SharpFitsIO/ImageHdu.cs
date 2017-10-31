@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Jhu.SharpFitsIO
 {
@@ -42,7 +41,12 @@ namespace Jhu.SharpFitsIO
 
         public Int16[] ReadStrideInt16()
         {
-            ReadStride();
+            return ReadStrideInt16Async().Result;
+        }
+
+        public async Task<Int16[]> ReadStrideInt16Async()
+        {
+            await ReadStrideAsync();
 
             Int16[] values;
             Fits.BitConverter.ToInt16(StrideBuffer, 0, StrideBuffer.Length / 2, out values);
@@ -51,7 +55,12 @@ namespace Jhu.SharpFitsIO
 
         public Int32[] ReadStrideInt32()
         {
-            ReadStride();
+            return ReadStrideInt32Async().Result;
+        }
+
+        public async Task<Int32[]> ReadStrideInt32Async()
+        {
+            await ReadStrideAsync();
 
             Int32[] values;
             Fits.BitConverter.ToInt32(StrideBuffer, 0, StrideBuffer.Length / 4, out values);
@@ -60,7 +69,12 @@ namespace Jhu.SharpFitsIO
 
         public Single[] ReadStrideSingle()
         {
-            ReadStride();
+            return ReadStrideSingleAsync().Result;
+        }
+
+        public async Task<Single[]> ReadStrideSingleAsync()
+        {
+            await ReadStrideAsync();
 
             Single[] values;
             Fits.BitConverter.ToSingle(StrideBuffer, 0, StrideBuffer.Length / 4, out values);
@@ -69,7 +83,12 @@ namespace Jhu.SharpFitsIO
 
         public Double[] ReadStrideDouble()
         {
-            ReadStride();
+            return ReadStrideDoubleAsync().Result;
+        }
+
+        public async Task<Double[]> ReadStrideDoubleAsync()
+        {
+            await ReadStrideAsync();
 
             Double[] values;
             Fits.BitConverter.ToDouble(StrideBuffer, 0, StrideBuffer.Length / 8, out values);

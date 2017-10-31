@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.IO;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -463,7 +462,7 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Header functions
 
-        public void ReadHeader()
+        public async Task ReadHeaderAsync()
         {
             // Make sure file is in read more
             if (file.FileMode != FitsFileMode.Read)
@@ -485,7 +484,7 @@ namespace Jhu.SharpFitsIO
             do
             {
                 card = new Card();
-                card.Read(Fits.WrappedStream);
+                await card.ReadAsync(Fits.WrappedStream);
 
                 ProcessCard(card);
 
@@ -494,7 +493,7 @@ namespace Jhu.SharpFitsIO
             while (!card.IsEnd);
 
             // Skip block
-            Fits.SkipBlock();
+            await Fits.SkipBlockAsync();
             dataPosition = Fits.WrappedStream.Position;
             
             totalStrides = GetTotalStrides();
@@ -503,6 +502,11 @@ namespace Jhu.SharpFitsIO
         }
 
         public void WriteHeader()
+        {
+            WriteHeaderAsync().Wait();
+        }
+
+        public async Task WriteHeaderAsync()
         {
             // Make sure file is in write more
             if (file.FileMode != FitsFileMode.Write)
@@ -532,11 +536,11 @@ namespace Jhu.SharpFitsIO
             }
             else
             {
-                OnWriteHeader();
+                await OnWriteHeaderAsync();
             }
         }
 
-        public virtual void OnWriteHeader()
+        public virtual async Task OnWriteHeaderAsync()
         {
             state = ObjectState.Header;
 
@@ -548,11 +552,11 @@ namespace Jhu.SharpFitsIO
 
             for (int i = 0; i < cards.Count; i++)
             {
-                cards[i].Write(Fits.WrappedStream);
+                await cards[i].WriteAsync(Fits.WrappedStream);
             }
 
             // Skip block
-            Fits.SkipBlock(FitsFile.FillSpaceBuffer);
+            await Fits.SkipBlockAsync(FitsFile.FillSpaceBuffer);
             dataPosition = Fits.WrappedStream.Position;
 
             totalStrides = GetTotalStrides();
@@ -610,7 +614,7 @@ namespace Jhu.SharpFitsIO
             strideCounter = 0;
         }
 
-        public byte[] ReadStride()
+        public async Task<byte[]> ReadStrideAsync()
         {
             EnsureDuringStrides();
 
@@ -619,7 +623,9 @@ namespace Jhu.SharpFitsIO
                 CreateStrideBuffer();
             }
 
-            if (strideBuffer.Length != Fits.WrappedStream.Read(strideBuffer, 0, strideBuffer.Length))
+            var res = await Fits.WrappedStream.ReadAsync(strideBuffer, 0, strideBuffer.Length);
+
+            if (strideBuffer.Length != res)
             {
                 throw Error.UnexpectedEndOfStream();
             }
@@ -628,17 +634,17 @@ namespace Jhu.SharpFitsIO
 
             if (!HasMoreStrides)
             {
-                Fits.SkipBlock();
+                await Fits.SkipBlockAsync();
                 state = ObjectState.Done;
             }
 
             return strideBuffer;
         }
-
-        internal void ReadToFinish()
+        
+        public async Task ReadToFinishAsync()
         {
             // Check if this is a header-only HDU. If not, we
-            // mush skip the data parts, otherwise skip the header padding only
+            // must skip the data parts, otherwise skip the header padding only
 
             if (AxisCount != 0)
             {
@@ -652,21 +658,21 @@ namespace Jhu.SharpFitsIO
                 state = ObjectState.Done;
             }
 
-            Fits.SkipBlock();
+            await Fits.SkipBlockAsync();
         }
 
-        public void WriteStride()
+        public async Task WriteStrideAsync()
         {
             EnsureDuringStrides();
 
             // If buffered, write to the buffer instead of the output stream
             var stream = (state == ObjectState.Buffering) ? buffer : Fits.WrappedStream;
-            stream.Write(strideBuffer, 0, strideBuffer.Length);
+            await stream.WriteAsync(strideBuffer, 0, strideBuffer.Length);
 
             strideCounter++;
         }
 
-        public void MarkEnd()
+        public async Task MarkEndAsync()
         {
             if (state != ObjectState.Buffering && state != ObjectState.Strides)
             {
@@ -685,13 +691,13 @@ namespace Jhu.SharpFitsIO
                     throw Error.AxisLengthMustBeSet();
                 }
 
-                OnWriteHeader();
+                await OnWriteHeaderAsync();
 
-                buffer.WriteTo(Fits.WrappedStream);
+                await buffer.CopyToAsync(Fits.WrappedStream);
                 buffer.Close();
             }
 
-            Fits.SkipBlock(FitsFile.FillZeroBuffer);
+            await Fits.SkipBlockAsync(FitsFile.FillZeroBuffer);
             state = ObjectState.Done;
         }
 

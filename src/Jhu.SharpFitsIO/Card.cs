@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -343,12 +343,12 @@ namespace Jhu.SharpFitsIO
         /// If no '= ' sequence found at bytes 8 and 9, the entire line is treated
         /// as a comment.
         /// </remarks>
-        internal void Read(Stream stream)
+        internal async Task ReadAsync(Stream stream)
         {
-            // TODO: handle continue
+            // TODO: handle CONTINUE
 
-            var buffer = new byte[80];
-            var res = stream.Read(buffer, 0, buffer.Length);
+            var buffer = new byte[Constants.FitsCardSize];
+            var res = await stream.ReadAsync(buffer, 0, buffer.Length);
 
             if (res == 0)
             {
@@ -417,7 +417,7 @@ namespace Jhu.SharpFitsIO
         #endregion
         #region Write functions
 
-        public void Write(Stream stream)
+        public async Task WriteAsync(Stream stream)
         {
             // TODO: implement multi-line values using the CONTINUE keyword
 
@@ -436,8 +436,8 @@ namespace Jhu.SharpFitsIO
 
             line += rawValue;
 
-            var buffer = new byte[80];
-            var res = Encoding.ASCII.GetBytes(line, 0, Math.Min(line.Length, 80), buffer, 0);
+            var buffer = new byte[Constants.FitsCardSize];
+            var res = Encoding.ASCII.GetBytes(line, 0, Math.Min(line.Length, Constants.FitsCardSize), buffer, 0);
 
             // FITS standard prefers spaces instead of 0 bytes in the header
             for (int i = res; i < buffer.Length; i++)
@@ -445,7 +445,7 @@ namespace Jhu.SharpFitsIO
                 buffer[i] = 0x20;
             }
 
-            stream.Write(buffer, 0, buffer.Length);
+            await stream.WriteAsync(buffer, 0, buffer.Length);
         }
 
         #endregion

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.Serialization;
@@ -363,7 +364,7 @@ namespace Jhu.SharpFitsIO
                 }
                 else if (type == typeof(string))
                 {
-                    if (length < 1 || length > 8000)
+                    if (length < 1 || length > Constants.FitsMaxColumns)
                     {
                         throw new InvalidOperationException(ExceptionMessages.MaxColumnsUnsupported);
                     }
@@ -415,21 +416,31 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
+        public bool ReadNextRow(object[] values)
+        {
+            return ReadNextRowAsync(values, 0).Result;
+        }
+
+        public bool ReadNextRow(object[] values, int startIndex)
+        {
+            return ReadNextRowAsync(values, startIndex).Result;
+        }
+
         /// <summary>
         /// Reads the next row from the binary table into an array of objects.
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public bool ReadNextRow(object[] values)
+        public async Task<bool> ReadNextRowAsync(object[] values)
         {
-            return ReadNextRow(values, 0);
+            return await ReadNextRowAsync(values, 0);
         }
 
-        public bool ReadNextRow(object[] values, int startIndex)
+        public async Task<bool> ReadNextRowAsync(object[] values, int startIndex)
         {
             if (HasMoreStrides)
             {
-                ReadStride();
+                await ReadStrideAsync();
 
                 int offset = 0;
                 for (int i = 0; i < Columns.Count; i++)
@@ -461,11 +472,16 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public void WriteNextRow(params object[] values)
+        {
+            WriteNextRowAsync(values).Wait();
+        }
+
         /// <summary>
         /// Writes the next row into a binary table. Parameter types must match columns.
         /// </summary>
         /// <param name="values"></param>
-        public void WriteNextRow(params object[] values)
+        public async Task WriteNextRowAsync(params object[] values)
         {
             if (StrideBuffer == null)
             {
@@ -494,14 +510,14 @@ namespace Jhu.SharpFitsIO
                 startIndex += res;
             }
 
-            WriteStride();
+            await WriteStrideAsync();
         }
 
         /// <summary>
         /// Writes rows from a data reader
         /// </summary>
         /// <param name="dr"></param>
-        public void WriteFromDataReader(DbDataReader dr)
+        public async Task WriteFromDataReaderAsync(DbDataReader dr)
         {
             // Create columns now if they haven't been created
             if (columns.Count == 0)
@@ -511,20 +527,20 @@ namespace Jhu.SharpFitsIO
 
             // This call will succeed even if number of rows in unknown
             // if file is set to buffering mode
-            WriteHeader();
+            await WriteHeaderAsync();
 
             var values = new object[dr.FieldCount];
-            while (dr.Read())
+            while (await dr.ReadAsync())
             {
                 dr.GetValues(values);
-                WriteNextRow(values);
+                await WriteNextRowAsync(values);
             }
 
             // Set number of rows to number of written strides
             SetAxisLengthInternal(2, StrideCounter);
 
             // Mark end of HDU
-            MarkEnd();
+            await MarkEndAsync();
         }
 
         #region Read delegate generator functions

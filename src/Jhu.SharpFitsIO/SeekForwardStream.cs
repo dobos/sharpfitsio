@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Jhu.SharpFitsIO
 {
@@ -128,6 +130,13 @@ namespace Jhu.SharpFitsIO
             return res;
         }
 
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var res = await baseStream.ReadAsync(buffer, offset, count, cancellationToken);
+            position += res;
+            return res;
+        }
+
         public override int ReadByte()
         {
             var res = baseStream.ReadByte();
@@ -153,6 +162,12 @@ namespace Jhu.SharpFitsIO
             position += count;
         }
 
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            await baseStream.WriteAsync(buffer, offset, count, cancellationToken);
+            position += count;
+        }
+
         public override void WriteByte(byte value)
         {
             baseStream.WriteByte(value);
@@ -162,6 +177,11 @@ namespace Jhu.SharpFitsIO
         public override void Flush()
         {
             baseStream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return baseStream.FlushAsync(cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
