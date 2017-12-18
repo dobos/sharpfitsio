@@ -23,6 +23,9 @@ namespace Jhu.SharpFitsIO
     {
         #region Private member variables
 
+        [NonSerialized]
+        private Dictionary<Type, FitsDataTypeMapping> dataTypeMappings;
+
         /// <summary>
         /// Collection of table columns
         /// </summary>
@@ -244,6 +247,16 @@ namespace Jhu.SharpFitsIO
             return res;
         }
 
+        public void RegisterTypeMapping(FitsDataTypeMapping mapping)
+        {
+            if (dataTypeMappings == null)
+            {
+                dataTypeMappings = new Dictionary<Type, FitsDataTypeMapping>();
+            }
+
+            dataTypeMappings[mapping.From] = mapping;
+        }
+
         /// <summary>
         /// Detects columns from header cards.
         /// </summary>
@@ -301,15 +314,21 @@ namespace Jhu.SharpFitsIO
             // Enumerate fields and generate columns
             var fields = structType.GetFields();
             var columns = new FitsTableColumn[fields.Length];
-
+            
             for (int i = 0; i < fields.Length; i++)
             {
-                if (fields[i].FieldType.IsValueType)
+                FitsDataType fitstype;
+
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(fields[i].FieldType))
+                {
+                    // TODO: implement nullable
+                    fitstype = dataTypeMappings[fields[i].FieldType].MapType(-1, false);
+                }
+                else if (fields[i].FieldType.IsValueType)
                 {
                     // Primitive types are written as is
-                    columns[i] = FitsTableColumn.Create(
-                        fields[i].Name,
-                        FitsDataType.Create(fields[i].FieldType));
+                    // TODO: implement nullable
+                    fitstype = FitsDataType.Create(fields[i].FieldType);
                 }
                 else if (fields[i].FieldType == typeof(string) || fields[i].FieldType.IsArray)
                 {
@@ -324,14 +343,15 @@ namespace Jhu.SharpFitsIO
                         throw new InvalidOperationException("Array size not specified");  // TODO
                     }
 
-                    columns[i] = FitsTableColumn.Create(
-                        fields[i].Name,
-                        FitsDataType.Create(type, repeat, false));
+                    // TODO: implement nullable
+                    fitstype = FitsDataType.Create(type, repeat, false);
                 }
                 else
                 {
                     throw new InvalidOperationException("Unsupported data type");  // TODO
                 }
+
+                columns[i] = FitsTableColumn.Create(fields[i].Name, fitstype);
             }
 
             CreateColumns(columns);
@@ -373,7 +393,16 @@ namespace Jhu.SharpFitsIO
                 }
 
                 // Create type and columns
-                var fitsType = FitsDataType.Create(type, repeat, nullable);
+                FitsDataType fitsType;
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(type))
+                {
+                    fitsType = dataTypeMappings[type].MapType(repeat, nullable);
+                }
+                else
+                {
+                    fitsType = FitsDataType.Create(type, repeat, nullable);
+                }
+
                 columns[i] = FitsTableColumn.Create(name, fitsType);
             }
 
@@ -493,18 +522,25 @@ namespace Jhu.SharpFitsIO
             {
                 int res;
                 var column = Columns[i];
+                var value = values[i];
+                var valuetype = value.GetType();
+
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(valuetype))
+                {
+                    value = dataTypeMappings[valuetype].MapValue(value);
+                }
 
                 if (column.DataType.Type == typeof(String))
                 {
-                    res = WriteString(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteString(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
                 else if (column.DataType.Repeat == 1)
                 {
-                    res = WriteScalar(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteScalar(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
                 else
                 {
-                    res = WriteArray(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteArray(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
 
                 startIndex += res;

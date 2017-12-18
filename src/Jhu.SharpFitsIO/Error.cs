@@ -47,5 +47,10 @@ namespace Jhu.SharpFitsIO
         {
             return new InvalidOperationException(ExceptionMessages.CannotMarkEnd);
         }
+
+        public static ArgumentNullException ArgumentNull(string paramName)
+        {
+            return new ArgumentNullException(paramName);
+        }
     }
 }

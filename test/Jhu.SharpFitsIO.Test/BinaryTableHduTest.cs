@@ -361,8 +361,7 @@ SELECT CAST(1.0000 AS float) [float],
        CAST('sample text' AS char(50)) [char(50)],
        CAST('sample text' AS nchar(50)) [nchar(50)],
        CAST('sample text' AS varchar(50)) [varchar(50)],
-       CAST(N'sample text' AS nvarchar(50)) [nvarchar(50)]
-  FROM [Graywulf_IO_Test].[dbo].[SampleData]";
+       CAST(N'sample text' AS nvarchar(50)) [nvarchar(50)]";
 
             FitsFile fits;
             BinaryTableHdu tab;
@@ -379,6 +378,98 @@ SELECT CAST(1.0000 AS float) [float],
                         tab.RowCount = 1;
                         tab.WriteFromDataReaderAsync(dr).Wait();
                     }
+                }
+            }
+        }
+
+        private class TestTypeMapping : FitsDataTypeMapping
+        {
+            public override Type From
+            {
+                get { return typeof(decimal); }
+            }
+
+            public override FitsDataType MapType(int repeat, bool nullable)
+            {
+                return FitsDataType.Create(typeof(string), 25, false);
+            }
+
+            public override object MapValue(object value)
+            {
+                return ((decimal)value).ToString();
+            }
+        }
+
+        struct TypeMappingStruct
+        {
+            public decimal data0;
+
+            public TypeMappingStruct(int init)
+            {
+                data0 = 1;
+            }
+
+            public object[] GetValues()
+            {
+                return new object[]
+                {
+                    data0
+                };
+            }
+        }
+
+        [TestMethod]
+        public void TestTypeMapping_Struct()
+        {
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            tab.RegisterTypeMapping(new TestTypeMapping());
+
+            tab.CreateColumns(typeof(TypeMappingStruct));
+            tab.RowCount = 3;
+
+            Assert.AreEqual(1, tab.Columns.Count);
+            Assert.AreEqual(typeof(string), tab.Columns[0].DataType.Type);
+            Assert.AreEqual(25, tab.GetAxisLength(1));
+            Assert.AreEqual(3, tab.GetAxisLength(2));
+
+            tab.WriteHeader();
+
+            // Now try to write some data
+            tab.WriteNextRow(new TypeMappingStruct(1).GetValues());
+            tab.WriteNextRow(new TypeMappingStruct(2).GetValues());
+            tab.WriteNextRow(new TypeMappingStruct(3).GetValues());
+        }
+
+        [TestMethod]
+        public void TestTypeMapping_DataReader()
+        {
+            var sql = @"
+SELECT CAST(1 AS decimal) [decimal]";
+
+            FitsFile fits;
+            BinaryTableHdu tab;
+
+            CreateFitsFileWithTable(out fits, out tab);
+
+            tab.RegisterTypeMapping(new TestTypeMapping());
+
+            using (var cn = new SqlConnection("data source=localhost;integrated security=true"))
+            {
+                cn.Open();
+                using (var cmd = new SqlCommand(sql, cn))
+                {
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        tab.RowCount = 1;
+                        tab.WriteFromDataReaderAsync(dr).Wait();
+                    }
+
+                    Assert.AreEqual(1, tab.Columns.Count);
+                    Assert.AreEqual(typeof(string), tab.Columns[0].DataType.Type);
                 }
             }
         }
