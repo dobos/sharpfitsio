@@ -8,6 +8,8 @@ namespace Jhu.SharpFitsIO
     internal static class Constants
     {
         public const int FitsBlockSize = 2880;
+        public const int FitsMaxColumns = 8000;
+        public const int FitsCardSize = 80;
 
         public const string FitsKeywordSimple = "SIMPLE";
         public const string FitsKeywordExtend = "EXTEND";

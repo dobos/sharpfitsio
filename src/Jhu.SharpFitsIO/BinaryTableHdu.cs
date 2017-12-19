@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.Serialization;
@@ -21,6 +22,9 @@ namespace Jhu.SharpFitsIO
     public class BinaryTableHdu : SimpleHdu, ICloneable
     {
         #region Private member variables
+
+        [NonSerialized]
+        private Dictionary<Type, FitsDataTypeMapping> dataTypeMappings;
 
         /// <summary>
         /// Collection of table columns
@@ -243,6 +247,16 @@ namespace Jhu.SharpFitsIO
             return res;
         }
 
+        public void RegisterTypeMapping(FitsDataTypeMapping mapping)
+        {
+            if (dataTypeMappings == null)
+            {
+                dataTypeMappings = new Dictionary<Type, FitsDataTypeMapping>();
+            }
+
+            dataTypeMappings[mapping.From] = mapping;
+        }
+
         /// <summary>
         /// Detects columns from header cards.
         /// </summary>
@@ -303,12 +317,18 @@ namespace Jhu.SharpFitsIO
 
             for (int i = 0; i < fields.Length; i++)
             {
-                if (fields[i].FieldType.IsValueType)
+                FitsDataType fitstype;
+
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(fields[i].FieldType))
+                {
+                    // TODO: implement nullable
+                    fitstype = dataTypeMappings[fields[i].FieldType].MapType(-1, false);
+                }
+                else if (fields[i].FieldType.IsValueType)
                 {
                     // Primitive types are written as is
-                    columns[i] = FitsTableColumn.Create(
-                        fields[i].Name,
-                        FitsDataType.Create(fields[i].FieldType));
+                    // TODO: implement nullable
+                    fitstype = FitsDataType.Create(fields[i].FieldType);
                 }
                 else if (fields[i].FieldType == typeof(string) || fields[i].FieldType.IsArray)
                 {
@@ -323,14 +343,15 @@ namespace Jhu.SharpFitsIO
                         throw new InvalidOperationException("Array size not specified");  // TODO
                     }
 
-                    columns[i] = FitsTableColumn.Create(
-                        fields[i].Name,
-                        FitsDataType.Create(type, repeat, false));
+                    // TODO: implement nullable
+                    fitstype = FitsDataType.Create(type, repeat, false);
                 }
                 else
                 {
                     throw new InvalidOperationException("Unsupported data type");  // TODO
                 }
+
+                columns[i] = FitsTableColumn.Create(fields[i].Name, fitstype);
             }
 
             CreateColumns(columns);
@@ -363,7 +384,7 @@ namespace Jhu.SharpFitsIO
                 }
                 else if (type == typeof(string))
                 {
-                    if (length < 1 || length > 8000)
+                    if (length < 1 || length > Constants.FitsMaxColumns)
                     {
                         throw new InvalidOperationException(ExceptionMessages.MaxColumnsUnsupported);
                     }
@@ -372,7 +393,16 @@ namespace Jhu.SharpFitsIO
                 }
 
                 // Create type and columns
-                var fitsType = FitsDataType.Create(type, repeat, nullable);
+                FitsDataType fitsType;
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(type))
+                {
+                    fitsType = dataTypeMappings[type].MapType(repeat, nullable);
+                }
+                else
+                {
+                    fitsType = FitsDataType.Create(type, repeat, nullable);
+                }
+
                 columns[i] = FitsTableColumn.Create(name, fitsType);
             }
 
@@ -415,17 +445,27 @@ namespace Jhu.SharpFitsIO
 
         #endregion
 
+        public bool ReadNextRow(object[] values)
+        {
+            return ReadNextRowAsync(values, 0).Result;
+        }
+
+        public bool ReadNextRow(object[] values, int startIndex)
+        {
+            return ReadNextRowAsync(values, startIndex).Result;
+        }
+
         /// <summary>
         /// Reads the next row from the binary table into an array of objects.
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public bool ReadNextRow(object[] values)
+        public async Task<bool> ReadNextRowAsync(object[] values)
         {
-            return ReadNextRow(values, 0);
+            return await ReadNextRowAsync(values, 0);
         }
 
-        public bool ReadNextRow(object[] values, int startIndex)
+        public async Task<bool> ReadNextRowAsync(object[] values, int startIndex)
         {
             if (HasMoreStrides)
             {
@@ -461,11 +501,16 @@ namespace Jhu.SharpFitsIO
             }
         }
 
+        public void WriteNextRow(params object[] values)
+        {
+            WriteNextRowAsync(values).Wait();
+        }
+
         /// <summary>
         /// Writes the next row into a binary table. Parameter types must match columns.
         /// </summary>
         /// <param name="values"></param>
-        public void WriteNextRow(params object[] values)
+        public async Task WriteNextRowAsync(params object[] values)
         {
             if (StrideBuffer == null)
             {
@@ -477,18 +522,25 @@ namespace Jhu.SharpFitsIO
             {
                 int res;
                 var column = Columns[i];
+                var value = values[i];
+                var valuetype = value.GetType();
+
+                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(valuetype))
+                {
+                    value = dataTypeMappings[valuetype].MapValue(value);
+                }
 
                 if (column.DataType.Type == typeof(String))
                 {
-                    res = WriteString(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteString(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
                 else if (column.DataType.Repeat == 1)
                 {
-                    res = WriteScalar(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteScalar(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
                 else
                 {
-                    res = WriteArray(Fits.BitConverter, column, StrideBuffer, startIndex, values[i]);
+                    res = WriteArray(Fits.BitConverter, column, StrideBuffer, startIndex, value);
                 }
 
                 startIndex += res;
@@ -501,7 +553,7 @@ namespace Jhu.SharpFitsIO
         /// Writes rows from a data reader
         /// </summary>
         /// <param name="dr"></param>
-        public void WriteFromDataReader(DbDataReader dr)
+        public async Task WriteFromDataReaderAsync(DbDataReader dr)
         {
             // Create columns now if they haven't been created
             if (columns.Count == 0)
@@ -514,10 +566,10 @@ namespace Jhu.SharpFitsIO
             WriteHeader();
 
             var values = new object[dr.FieldCount];
-            while (dr.Read())
+            while (await dr.ReadAsync())
             {
                 dr.GetValues(values);
-                WriteNextRow(values);
+                await WriteNextRowAsync(values);
             }
 
             // Set number of rows to number of written strides
