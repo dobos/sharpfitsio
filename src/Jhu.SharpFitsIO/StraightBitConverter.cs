@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    internal class StraightBitConverter : BitConverterBase
+    public class StraightBitConverter : BitConverterBase
     {
         public override bool IsLittleEndian
         {

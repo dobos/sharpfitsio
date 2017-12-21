@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    internal abstract class BitConverterBase
+    public abstract class BitConverterBase
     {
         protected delegate int ConvertToTypeDelegate(byte[] bytes, int startIndex, out object value);
         protected delegate int ConvertToArrayTypeDelegate(byte[] bytes, int startIndex, int count, out object value);
