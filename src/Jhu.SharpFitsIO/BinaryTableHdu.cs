@@ -460,11 +460,6 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public async Task<bool> ReadNextRowAsync(object[] values)
-        {
-            return await ReadNextRowAsync(values, 0);
-        }
-
         public async Task<bool> ReadNextRowAsync(object[] values, int startIndex)
         {
             if (HasMoreStrides)

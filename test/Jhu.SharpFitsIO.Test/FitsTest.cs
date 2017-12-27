@@ -48,11 +48,11 @@ namespace Jhu.SharpFitsIO
                 var infile = new FileStream(path, FileMode.Open, FileAccess.Read);
                 var gz = new GZipInputStream(infile);
 
-                f = new FitsFile(gz, FitsFileMode.Read, Endianness.BigEndian);
+                f = new FitsFile(gz, FileAccess.Read, Endianness.BigEndian);
             }
             else
             {
-                f = new FitsFile(path, FitsFileMode.Read, Endianness.BigEndian);
+                f = new FitsFile(path, FileAccess.Read, Endianness.BigEndian);
             }
 
             return f;

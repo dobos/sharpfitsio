@@ -10,7 +10,7 @@ namespace Jhu.SharpFitsIO
 {
     [Serializable]
     [DataContract(Namespace = "")]
-    public class FitsFile : IDisposable, ICloneable
+    public class FitsFile : BinaryDataFile, IDisposable, ICloneable
     {
         #region String handlers
 
@@ -37,54 +37,10 @@ namespace Jhu.SharpFitsIO
         #region Private member variables
 
         /// <summary>
-        /// Base stream to read from/write to
-        /// </summary>
-        /// <remarks>
-        /// Either set by the constructor (in this case the stream is not owned)
-        /// or opened internally (owned)
-        /// </remarks>
-        [NonSerialized]
-        private Stream baseStream;
-
-        /// <summary>
-        /// If true, baseStream was opened by the object and will need
-        /// to be closed when disposing.
-        /// </summary>
-        [NonSerialized]
-        private bool ownsBaseStream;
-
-        /// <summary>
-        /// Wrapped version of the base stream (ForwardStream and/or DetachedStream)
-        /// </summary>
-        [NonSerialized]
-        private Stream wrappedStream;
-
-        /// <summary>
-        /// Read or write
-        /// </summary>
-        [NonSerialized]
-        private FitsFileMode fileMode;
-
-        /// <summary>
-        /// Path to the file. If set, the class can open it internally.
-        /// </summary>
-        [NonSerialized]
-        private string path;
-
-        /// <summary>
-        /// Endianness. Many FITS files are big-endian
-        /// </summary>
-        private Endianness endianness;
-
-        /// <summary>
-        /// Little-endian or big-endian bit converter.
-        /// </summary>
-        private BitConverterBase bitConverter;
-
-        /// <summary>
         /// If true, HDUs can be written buffered. This option is to be used
         /// when the amount of data to be written to the stream is unknown.
         /// </summary>
+        [NonSerialized]
         private bool isBufferingAllowed;
 
         /// <summary>
@@ -106,78 +62,7 @@ namespace Jhu.SharpFitsIO
 
         #endregion
         #region Properties
-
-        /// <summary>
-        /// Gets the stream that can be used to read data
-        /// </summary>
-        [IgnoreDataMember]
-        public virtual Stream BaseStream
-        {
-            get { return baseStream; }
-            set { baseStream = value; }
-        }
-
-        /// <summary>
-        /// Gets the stream data is read from or written to. Used internally.
-        /// </summary>
-        /// <remarks>
-        /// Depending whether compression is turned on or not, we need to use
-        /// the baseStream or the wrapper stream.
-        /// </remarks>
-        internal Stream WrappedStream
-        {
-            get { return wrappedStream; }
-        }
-
-        /// <summary>
-        /// Gets or sets file mode (read or write)
-        /// </summary>
-        [IgnoreDataMember]
-        public FitsFileMode FileMode
-        {
-            get { return fileMode; }
-            set
-            {
-                EnsureNotOpen();
-                fileMode = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the location of the file
-        /// </summary>
-        [DataMember]
-        public string Path
-        {
-            get { return path; }
-            set
-            {
-                EnsureNotOpen();
-                path = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the endianness of the file.
-        /// </summary>
-        public Endianness Endianness
-        {
-            get { return endianness; }
-            set
-            {
-                EnsureNotOpen();
-                endianness = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the BitConverter for byte order swapping. Used internally.
-        /// </summary>
-        internal BitConverterBase BitConverter
-        {
-            get { return bitConverter; }
-        }
-
+        
         public bool IsBufferingAllowed
         {
             get { return isBufferingAllowed; }
@@ -193,15 +78,6 @@ namespace Jhu.SharpFitsIO
             get { return hdus; }
         }
 
-        /// <summary>
-        /// Gets if the underlying data file is closed
-        /// </summary>
-        [IgnoreDataMember]
-        public virtual bool IsClosed
-        {
-            get { return baseStream == null; }
-        }
-
         #endregion
         #region Constructors and initializers
 
@@ -215,33 +91,28 @@ namespace Jhu.SharpFitsIO
             CopyMembers(old);
         }
 
-        public FitsFile(string path, FitsFileMode fileMode, Endianness endianness)
+        public FitsFile(string path, FileAccess fileAccess, Endianness endianness)
+            :base(path, fileAccess, endianness)
         {
             InitializeMembers(new StreamingContext());
-
-            this.path = path;
-            this.fileMode = fileMode;
-            this.endianness = endianness;
-
             Open();
         }
 
-        public FitsFile(string path, FitsFileMode fileMode)
-            : this(path, fileMode, Endianness.BigEndian)
+        public FitsFile(string path, FileAccess fileAccess)
+            : this(path, fileAccess, Endianness.BigEndian)
         {
             // Overload
         }
 
-        public FitsFile(Stream stream, FitsFileMode fileMode, Endianness endianness)
+        public FitsFile(Stream stream, FileAccess fileAccess, Endianness endianness)
         {
             InitializeMembers(new StreamingContext());
-
-            OpenExternalStream(stream, fileMode, endianness);
+            OpenExternalStream(stream, fileAccess, endianness);
             Open();
         }
 
-        public FitsFile(Stream stream, FitsFileMode fileMode)
-            : this(stream, fileMode, Endianness.BigEndian)
+        public FitsFile(Stream stream, FileAccess fileAccess)
+            : this(stream, fileAccess, Endianness.BigEndian)
         {
             // Overload
         }
@@ -249,16 +120,6 @@ namespace Jhu.SharpFitsIO
         [OnDeserializing]
         private void InitializeMembers(StreamingContext context)
         {
-            this.baseStream = null;
-            this.ownsBaseStream = false;
-            this.wrappedStream = null;
-
-            this.fileMode = FitsFileMode.Unknown;
-            this.path = null;
-
-            this.endianness = Endianness.BigEndian;
-            this.bitConverter = null;
-
             this.isBufferingAllowed = false;
 
             this.hdus = new List<SimpleHdu>();
@@ -267,16 +128,6 @@ namespace Jhu.SharpFitsIO
 
         private void CopyMembers(FitsFile old)
         {
-            this.baseStream = null;
-            this.ownsBaseStream = false;
-            this.wrappedStream = null;
-
-            this.fileMode = old.fileMode;
-            this.path = old.path;
-
-            this.endianness = old.endianness;
-            this.bitConverter = old.bitConverter;
-
             this.isBufferingAllowed = old.isBufferingAllowed;
 
             // Deep copy HDUs
@@ -288,11 +139,6 @@ namespace Jhu.SharpFitsIO
             this.hduCounter = old.hduCounter;
         }
 
-        public void Dispose()
-        {
-            Close();
-        }
-
         public object Clone()
         {
             return new FitsFile(this);
@@ -300,194 +146,19 @@ namespace Jhu.SharpFitsIO
 
         #endregion
         #region Stream open/close
-
-        /// <summary>
-        /// Makes sure that the base stream is not open, if
-        /// stream is owned by the class.
-        /// </summary>
-        protected virtual void EnsureNotOpen()
+        
+        protected override void WrapStream()
         {
-            if (ownsBaseStream && baseStream != null)
+            if (!BaseStream.CanSeek)
             {
-                throw new InvalidOperationException();
-            }
-        }
-
-        /// <summary>
-        /// Opens the file by opening a stream to the resource
-        /// identified by the Uri property.
-        /// </summary>
-        public void Open()
-        {
-            EnsureNotOpen();
-
-            switch (fileMode)
-            {
-                case FitsFileMode.Read:
-                    OpenForRead();
-                    break;
-                case FitsFileMode.Write:
-                    OpenForWrite();
-                    break;
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
-        /// <summary>
-        /// Opens a file by wrapping an external file stream
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="fileMode"></param>
-        public void Open(Stream stream, FitsFileMode fileMode, Endianness endianness)
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException("stream");  // TODO
-            }
-
-            OpenExternalStream(stream, fileMode, endianness);
-            Open();
-        }
-
-        /// <summary>
-        /// Opens a file by opening a new stream.
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="fileMode"></param>
-        public void Open(string path, FitsFileMode fileMode, Endianness endianness)
-        {
-            if (path == null)
-            {
-                throw new ArgumentNullException("path"); // TODO
-            }
-
-            this.path = path;
-            this.fileMode = fileMode;
-            this.endianness = endianness;
-
-            Open();
-        }
-
-        /// <summary>
-        /// Opens a file by wrapping a stream.
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="mode"></param>
-        /// <param name="compression"></param>
-        protected void OpenExternalStream(Stream stream, FitsFileMode fileMode, Endianness endianness)
-        {
-            this.baseStream = stream;
-            this.ownsBaseStream = false;
-
-            this.fileMode = fileMode;
-            this.endianness = endianness;
-        }
-
-        /// <summary>
-        /// Opens the underlying stream, if it is not set externally via
-        /// a constructor or the OpenStream method.
-        /// </summary>
-        private void OpenOwnStream()
-        {
-            switch (fileMode)
-            {
-                case FitsFileMode.Read:
-                    baseStream = new FileStream(path, System.IO.FileMode.Open, FileAccess.Read, FileShare.Read);
-                    break;
-                case FitsFileMode.Write:
-                    baseStream = new FileStream(path, System.IO.FileMode.Create, FileAccess.Write, FileShare.Read);
-                    break;
-                default:
-                    throw new InvalidOperationException();
-            }
-
-            ownsBaseStream = true;
-        }
-
-        private void OpenForRead()
-        {
-            if (FileMode != FitsFileMode.Read)
-            {
-                throw new InvalidOperationException();
-            }
-
-            if (baseStream == null)
-            {
-                OpenOwnStream();
-            }
-
-            WrapStream();
-            CreateBitConverter();
-        }
-
-        private void OpenForWrite()
-        {
-            if (FileMode != FitsFileMode.Write)
-            {
-                throw new InvalidOperationException();
-            }
-
-            if (baseStream == null)
-            {
-                OpenOwnStream();
-            }
-
-            WrapStream();
-            CreateBitConverter();
-        }
-
-        private void WrapStream()
-        {
-            if (!baseStream.CanSeek)
-            {
-                wrappedStream = new SeekForwardStream(new DetachedStream(baseStream));
+                WrappedStream = new SeekForwardStream(new DetachedStream(BaseStream));
             }
             else
             {
-                wrappedStream = new DetachedStream(baseStream);
+                WrappedStream = new DetachedStream(BaseStream);
             }
         }
-
-        /// <summary>
-        /// Closes the data file
-        /// </summary>
-        public void Close()
-        {
-            if (wrappedStream != null)
-            {
-                wrappedStream.Flush();
-                wrappedStream.Close();
-                wrappedStream.Dispose();
-                wrappedStream = null;
-            }
-
-            if (ownsBaseStream && baseStream != null)
-            {
-                baseStream.Flush();
-                baseStream.Close();
-                baseStream.Dispose();
-                baseStream = null;
-                ownsBaseStream = false;
-            }
-        }
-
-        private void CreateBitConverter()
-        {
-            // Create bit converter
-            switch (endianness)
-            {
-                case Endianness.LittleEndian:
-                    bitConverter = new StraightBitConverter();
-                    break;
-                case Endianness.BigEndian:
-                    bitConverter = new SwapBitConverter();
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
+        
         #endregion
 
         public SimpleHdu ReadNextHdu()
@@ -600,10 +271,10 @@ namespace Jhu.SharpFitsIO
             // reading from the file.
             // We keep the async signature here for compatibility
 
-            var offset = (int)(Constants.FitsBlockSize * ((wrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - wrappedStream.Position);
+            var offset = (int)(Constants.FitsBlockSize * ((WrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - WrappedStream.Position);
             if (offset > 0)
             {
-                wrappedStream.Seek(offset, SeekOrigin.Current);
+                WrappedStream.Seek(offset, SeekOrigin.Current);
             }
 
             return Task.CompletedTask;
@@ -614,11 +285,11 @@ namespace Jhu.SharpFitsIO
         /// </summary>
         internal async Task SkipBlockAsync(byte[] fill)
         {
-            var offset = (int)(Constants.FitsBlockSize * ((wrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - wrappedStream.Position);
+            var offset = (int)(Constants.FitsBlockSize * ((WrappedStream.Position + Constants.FitsBlockSize - 1) / Constants.FitsBlockSize) - WrappedStream.Position);
 
             if (offset > 0)
             {
-                await wrappedStream.WriteAsync(fill, 0, offset);
+                await WrappedStream.WriteAsync(fill, 0, offset);
             }
         }
     }

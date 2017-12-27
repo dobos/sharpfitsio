@@ -465,7 +465,7 @@ namespace Jhu.SharpFitsIO
         public async Task ReadHeaderAsync()
         {
             // Make sure file is in read more
-            if (file.FileMode != FitsFileMode.Read)
+            if (file.FileAccess != FileAccess.Read)
             {
                 throw Error.CannotReadFileOpenedForWrite();
             }
@@ -509,7 +509,7 @@ namespace Jhu.SharpFitsIO
         public async Task WriteHeaderAsync()
         {
             // Make sure file is in write more
-            if (file.FileMode != FitsFileMode.Write)
+            if (file.FileAccess != FileAccess.Write)
             {
                 throw Error.CannotWriteFileOpenedForRead();
             }

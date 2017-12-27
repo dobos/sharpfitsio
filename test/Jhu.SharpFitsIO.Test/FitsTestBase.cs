@@ -28,7 +28,7 @@ namespace Jhu.SharpFitsIO
 
         protected FitsFile CreateFitsFile()
         {
-            var fits = new FitsFile(this.GetType().Name + "_" + GetTestName() + ".fits", FitsFileMode.Write);
+            var fits = new FitsFile(this.GetType().Name + "_" + GetTestName() + ".fits", System.IO.FileAccess.Write);
 
             return fits;
         }

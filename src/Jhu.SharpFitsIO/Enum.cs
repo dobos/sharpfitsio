@@ -5,13 +5,6 @@ using System.Text;
 
 namespace Jhu.SharpFitsIO
 {
-    public enum FitsFileMode
-    {
-        Unknown,
-        Read,
-        Write
-    }
-
     public enum Endianness
     {
         LittleEndian,
