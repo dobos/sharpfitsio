@@ -30,9 +30,9 @@ namespace Jhu.SharpFitsIO
                 return new FitsDataType()
                 {
                     Name = Constants.FitsTypeNameBit,
-                    Type = typeof(Byte),
+                    Type = typeof(Bit),
                     Code = 'X',
-                    ByteSize = sizeof(Byte),
+                    ByteSize = -1,
                     NullValue = Constants.FitsLogicalNull,
                     IsInteger = false,
                 };

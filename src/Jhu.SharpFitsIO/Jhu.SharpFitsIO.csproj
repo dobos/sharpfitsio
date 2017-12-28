@@ -76,6 +76,7 @@
   <ItemGroup>
     <Compile Include="BinaryDataFile.cs" />
     <Compile Include="BinaryTableHdu.cs" />
+    <Compile Include="Bit.cs" />
     <Compile Include="BitConverterBase.cs" />
     <Compile Include="Card.cs" />
     <Compile Include="CardCollection.cs" />
