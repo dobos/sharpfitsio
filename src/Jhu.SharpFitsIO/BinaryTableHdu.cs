@@ -518,9 +518,9 @@ namespace Jhu.SharpFitsIO
                 int res;
                 var column = Columns[i];
                 var value = values[i];
-                var valuetype = value.GetType();
+                var valuetype = value?.GetType();
 
-                if (dataTypeMappings != null && dataTypeMappings.ContainsKey(valuetype))
+                if (valuetype != null && dataTypeMappings != null && dataTypeMappings.ContainsKey(valuetype))
                 {
                     value = dataTypeMappings[valuetype].MapValue(value);
                 }
