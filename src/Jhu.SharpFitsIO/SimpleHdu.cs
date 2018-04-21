@@ -623,7 +623,7 @@ namespace Jhu.SharpFitsIO
                 CreateStrideBuffer();
             }
 
-            var res = await Fits.WrappedStream.ReadAsync(strideBuffer, 0, strideBuffer.Length);
+            var res = Fits.WrappedStream.Read(strideBuffer, 0, strideBuffer.Length);
 
             if (strideBuffer.Length != res)
             {

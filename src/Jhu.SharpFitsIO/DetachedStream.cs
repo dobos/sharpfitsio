@@ -114,7 +114,7 @@ namespace Jhu.SharpFitsIO
         {
             if (this.baseStream != null)
             {
-                this.baseStream.Flush();
+                Flush();
                 this.baseStream = null;
             }
 
@@ -173,7 +173,19 @@ namespace Jhu.SharpFitsIO
         
         public override void Flush()
         {
-            baseStream.Flush();
+            // HACK
+            // Because not all streams support flushing the best we can do here
+            // is to wrap things into a try block and hope it won't cause problems.
+            try
+            {
+                if (baseStream.CanSeek)
+                {
+                    baseStream.Flush();
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

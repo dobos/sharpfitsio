@@ -348,7 +348,7 @@ namespace Jhu.SharpFitsIO
             // TODO: handle CONTINUE
 
             var buffer = new byte[Constants.FitsCardSize];
-            var res = await stream.ReadAsync(buffer, 0, buffer.Length);
+            var res = await ReadBytesAsync(stream, buffer);
 
             if (res == 0)
             {
@@ -377,6 +377,27 @@ namespace Jhu.SharpFitsIO
                 rawValue = null;
                 comments = line.Substring(10);
             }
+        }
+
+        private async Task<int> ReadBytesAsync(Stream stream, byte[] buffer)
+        {
+            int offset = 0;
+
+            while (offset < buffer.Length)
+            {
+                var res = await stream.ReadAsync(buffer, offset, buffer.Length - offset);
+
+                if (res == 0)
+                {
+                    return offset;
+                }
+                else
+                {
+                    offset += res;
+                }
+            }
+
+            return offset;
         }
 
         private void ReadValue(string line)
